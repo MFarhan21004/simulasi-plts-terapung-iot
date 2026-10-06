@@ -34,9 +34,9 @@
     for (var i = 0; i < count; i++) {
       clouds.push({
         x: 100 + i * 300 + Math.random() * 100,
-        y: 70 + Math.random() * 50,
-        rx: 90 + Math.random() * 40,
-        ry: 30 + Math.random() * 15,
+        y: 55 + (i % 3) * 42 + Math.random() * 16,
+        rx: 72 + Math.random() * 28,
+        ry: 24 + Math.random() * 12,
         density: density,
         speed: speed * (0.8 + Math.random() * 0.4),
         origX: 0, // untuk animasi
@@ -203,9 +203,9 @@
       for (var i = current; i < count; i++) {
         clouds.push({
           x: -100 - Math.random() * 200,
-          y: 70 + Math.random() * 50,
-          rx: 90 + Math.random() * 40,
-          ry: 30 + Math.random() * 15,
+          y: 55 + (i % 3) * 42 + Math.random() * 16,
+          rx: 72 + Math.random() * 28,
+          ry: 24 + Math.random() * 12,
           density: density,
           speed: speed * (0.8 + Math.random() * 0.4)
         });

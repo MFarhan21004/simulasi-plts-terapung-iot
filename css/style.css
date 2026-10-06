@@ -124,24 +124,33 @@ body {
 /* ===================== MAIN LAYOUT ===================== */
 .main-layout {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: minmax(0, 1fr) 340px;
   gap: 0;
-  min-height: calc(100vh - 120px);
+  min-height: calc(100vh - 94px);
 }
 
 .canvas-section {
-  padding: 12px;
+  min-width: 0;
+  min-height: calc(100vh - 94px);
+  padding: 16px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  background: var(--bg-secondary);
+  background:
+    radial-gradient(circle at 20% 15%, rgba(59, 130, 246, 0.09), transparent 34%),
+    linear-gradient(145deg, #111827 0%, #0f172a 55%, #0b1220 100%);
 }
 
 #sim-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
   border-radius: var(--radius-lg);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
   cursor: grab;
   max-width: 100%;
+  max-height: calc(100vh - 126px);
+  object-fit: contain;
 }
 
 #sim-canvas:active {
@@ -153,18 +162,19 @@ body {
   background: var(--bg-secondary);
   border-left: 1px solid var(--border-color);
   overflow-y: auto;
-  max-height: calc(100vh - 56px);
-  padding: 12px;
+  max-height: calc(100vh - 54px);
+  padding: 14px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .panel-section {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  padding: 12px;
+  padding: 13px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
   transition: border-color 0.2s;
 }
 
@@ -457,6 +467,11 @@ input:focus-visible + .toggle-slider {
 
   .canvas-section {
     padding: 8px;
+    min-height: 0;
+  }
+
+  #sim-canvas {
+    max-height: none;
   }
 }
 

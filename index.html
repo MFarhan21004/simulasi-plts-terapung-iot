@@ -13,7 +13,7 @@
   <header class="header">
     <div>
       <h1>⚡ Simulasi PLTS Terapung + Baterai + H₂ Hijau</h1>
-      <span class="header-subtitle">LKM-3 MSTR Energi — Praktek Rekayasa | Kelompok 1 FPMIPA UPI</span>
+      <span class="header-subtitle">LKM-3 MSTR Energi — Praktek Rekayasa | Kelompok 1</span>
     </div>
     <div class="header-buttons">
       <button id="btn-pause" class="btn btn-primary" aria-label="Jeda simulasi">⏸ Jeda</button>
@@ -63,8 +63,8 @@
         </div>
         <div class="control-row">
           <label for="wind-speed">Kec. angin</label>
-          <input type="range" id="wind-speed" min="0" max="60" value="12" aria-label="Kecepatan angin 0-60 px/detik">
-          <span class="value" id="wind-speed-value">12 px/s</span>
+          <input type="range" id="wind-speed" min="0" max="30" value="5" aria-label="Kecepatan angin 0-30 px/detik">
+          <span class="value" id="wind-speed-value">5 px/s</span>
         </div>
         <div class="control-row">
           <label for="cloud-count">Jumlah awan</label>
@@ -87,8 +87,19 @@
           </select>
         </div>
         <div class="control-row">
+          <label for="auto-day-night">Siklus siang/malam</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="auto-day-night" checked aria-label="Aktifkan siklus siang malam otomatis berdasarkan jam perangkat">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="control-row">
           <label>Waktu simulasi</label>
           <span class="value" id="info-time">00:00:00</span>
+        </div>
+        <div class="control-row">
+          <label>Periode</label>
+          <span class="value" id="info-period">SIANG</span>
         </div>
       </div>
 
@@ -121,8 +132,28 @@
         </div>
         <div class="control-row">
           <label for="h2-init">Stok H₂ awal</label>
-          <input type="range" id="h2-init" min="0" max="50" value="0" aria-label="Stok hidrogen awal 0-50 mL">
+          <input type="range" id="h2-init" min="0" max="200" value="0" aria-label="Stok hidrogen awal 0-200 mL">
           <span class="value" id="h2-init-value">0 mL</span>
+        </div>
+        <div class="control-row">
+          <label for="lamp-power">Daya lampu</label>
+          <input type="range" id="lamp-power" min="0" max="5" value="1" step="0.1" aria-label="Daya lampu 0-5 Watt">
+          <span class="value" id="lamp-power-value">1.0 W</span>
+        </div>
+        <div class="control-row">
+          <label for="electrolyzer-power">Daya ke H₂</label>
+          <input type="range" id="electrolyzer-power" min="0.2" max="2" value="1" step="0.1" aria-label="Daya elektroliser 0.2-2 Watt">
+          <span class="value" id="electrolyzer-power-value">1.0 W</span>
+        </div>
+        <div class="control-row">
+          <label for="h2-capacity">Kapasitas tangki H₂</label>
+          <input type="range" id="h2-capacity" min="10" max="200" value="50" step="5" aria-label="Kapasitas tangki hidrogen 10-200 mL">
+          <span class="value" id="h2-capacity-value">50 mL</span>
+        </div>
+        <div class="control-row">
+          <label for="o2-capacity">Kapasitas tangki O₂</label>
+          <input type="range" id="o2-capacity" min="10" max="200" value="50" step="5" aria-label="Kapasitas tangki oksigen 10-200 mL">
+          <span class="value" id="o2-capacity-value">50 mL</span>
         </div>
       </div>
 
@@ -177,6 +208,10 @@
             <span class="value yellow" id="info-ppv">0 W</span>
           </div>
           <div class="info-item">
+            <span class="label">P PLN</span>
+            <span class="value" id="info-ppln">0 W</span>
+          </div>
+          <div class="info-item">
             <span class="label">V baterai</span>
             <span class="value green" id="info-vbat">0 V</span>
           </div>
@@ -187,6 +222,14 @@
           <div class="info-item">
             <span class="label">Mode EMS</span>
             <span class="value cyan" id="info-mode">NORMAL</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Skenario aktif</span>
+            <span class="value cyan" id="info-scenario">Standar</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Sumber lampu</span>
+            <span class="value" id="info-lamp-source">-</span>
           </div>
           <div class="info-item">
             <span class="label">Relay aktif</span>

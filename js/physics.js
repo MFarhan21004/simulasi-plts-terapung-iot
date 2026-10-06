@@ -59,24 +59,23 @@
    */
   function busAndBattery(state, dt) {
     // Hitung beban listrik total
-    var pLoad = C.P_ESP; // ESP32 selalu aktif
-    if (state.lampOn && !state.relay.ch3 && !state.relay.ch4) {
-      // Lampu dari panel/baterai (CH1)
-      pLoad += C.P_LAMP;
-    }
+    var lampLoad = state.lampOn ? state.lampPower : 0;
+    var pLoad = C.P_ESP + lampLoad; // beban total sebelum sumber dipilih
     // Elektroliser (CH2)
     var pElectrolyzer = 0;
     if (state.relay.ch2) {
-      pElectrolyzer = C.V_EL * C.I_EL;
+      pElectrolyzer = state.electrolyzerPower;
     }
     pLoad += pElectrolyzer;
 
-    // Fuel cell memasok lampu langsung, tidak melalui baterai
-    // Jadi beban fuel cell tidak masuk neraca baterai
+    // Fuel cell atau PLN memasok beban langsung, tidak melalui baterai.
+    var pFCSource = state.relay.ch3 ? lampLoad : 0;
+    var pPLN = state.relay.ch4 ? Math.max(0, pLoad - state.pPV) : 0;
 
     // Daya bersih ke baterai
-    var pNet = state.pPV - pLoad;
+    var pNet = state.pPV + pFCSource + pPLN - pLoad;
     state.pNet = pNet;
+    state.pPLN = pPLN;
 
     // Update energi baterai
     var dE;
@@ -104,9 +103,10 @@
     state.flows.w1 = state.pPV;
     state.flows.w2 = pNet > 0 ? pNet : 0;
     state.flows.w2r = pNet < 0 ? -pNet : 0;
-    state.flows.w3 = (state.lampOn && !state.relay.ch3 && !state.relay.ch4) ? C.P_LAMP : 0;
+    state.flows.w3 = state.lampOn && !state.relay.ch3 && !state.relay.ch4 ? state.lampPower : 0;
     state.flows.w4 = pElectrolyzer;
     state.flows.w8 = C.P_ESP;
+    state.flows.w7 = pPLN;
     state.flows.pLoad = pLoad;
     state.flows.pElectrolyzer = pElectrolyzer;
   }
@@ -122,7 +122,7 @@
     state.flows.elActive = true;
 
     // Cek tabung penuh
-    if (state.h2 >= C.H2_TUBE_MAX) {
+    if (state.h2 >= state.h2Capacity) {
       state.relay.ch2 = false;
       state.h2Full = true;
       state.flows.elActive = false;
@@ -130,7 +130,8 @@
     }
 
     // Hukum Faraday: n_H2 = η_F · I · t / (2F)
-    var nH2 = state.etaF * C.I_EL * dt / (2 * C.F_CONST); // mol
+    var electrolyzerCurrent = state.electrolyzerPower / C.V_EL;
+    var nH2 = state.etaF * electrolyzerCurrent * dt / (2 * C.F_CONST); // mol
     var vH2 = nH2 * C.V_M * 1000; // mL (V_M dalam L/mol × 1000)
     var vO2 = vH2 / 2;
 
@@ -138,12 +139,12 @@
     state.o2 += vO2;
 
     // Batasi
-    if (state.h2 > C.H2_TUBE_MAX) {
-      var excess = state.h2 - C.H2_TUBE_MAX;
-      state.h2 = C.H2_TUBE_MAX;
+    if (state.h2 > state.h2Capacity) {
+      var excess = state.h2 - state.h2Capacity;
+      state.h2 = state.h2Capacity;
       state.o2 -= excess / 2;
     }
-    state.o2 = Math.max(0, Math.min(C.H2_TUBE_MAX, state.o2));
+    state.o2 = Math.max(0, Math.min(state.o2Capacity, state.o2));
   }
 
   /**
@@ -158,7 +159,7 @@
     }
 
     // Fuel cell memasok beban lampu
-    var pBeban = C.P_LAMP;
+    var pBeban = state.lampPower;
     var pFCin = pBeban / C.ETA_FC; // daya kimia yang dibutuhkan
 
     // Konsumsi H₂: n = P_in · dt / E_mol
@@ -174,6 +175,7 @@
 
     state.h2 -= vH2consumed;
     state.h2 = Math.max(0, state.h2);
+    state.h2Full = state.h2 >= state.h2Capacity;
     state.pFC = pBeban;
 
     state.flows.w5 = vH2consumed > 0.0001 ? pBeban : 0;
@@ -193,7 +195,7 @@
     state.eDay.pv += state.pPV * dtH;
     state.eDay.load += state.flows.pLoad * dtH;
     if (state.relay.ch2) {
-      state.eDay.h2chem += (C.V_EL * C.I_EL) * dtH;
+      state.eDay.h2chem += state.electrolyzerPower * dtH;
     }
     if (state.relay.ch3) {
       state.eDay.fc += state.pFC * dtH;

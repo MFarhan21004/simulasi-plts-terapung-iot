@@ -14,39 +14,39 @@
   function definePaths() {
     // W1: Panel → IoT Box
     paths.w1 = [
-      { x: 340, y: 260 }, { x: 400, y: 240 }, { x: 440, y: 200 }
+      { x: 295, y: 300 }, { x: 330, y: 330 }
     ];
     // W2: IoT → Baterai (mengisi)
     paths.w2 = [
-      { x: 540, y: 230 }, { x: 540, y: 280 }
+      { x: 430, y: 270 }, { x: 475, y: 185 }
     ];
     // W2': Baterai → IoT (mengosongkan)
     paths.w2r = [
-      { x: 540, y: 280 }, { x: 540, y: 230 }
+      { x: 475, y: 185 }, { x: 430, y: 270 }
     ];
     // W3: IoT → Lampu
     paths.w3 = [
-      { x: 600, y: 200 }, { x: 650, y: 200 }, { x: 690, y: 230 }
+      { x: 505, y: 360 }, { x: 620, y: 385 }, { x: 740, y: 455 }, { x: 820, y: 500 }
     ];
     // W4: IoT → Elektroliser
     paths.w4 = [
-      { x: 600, y: 180 }, { x: 700, y: 160 }, { x: 800, y: 180 }
+      { x: 505, y: 320 }, { x: 650, y: 275 }, { x: 760, y: 235 }, { x: 870, y: 210 }
     ];
     // W5: Tabung H₂ → Fuel Cell (jalur gas)
     paths.w5 = [
-      { x: 890, y: 220 }, { x: 920, y: 250 }, { x: 950, y: 270 }
+      { x: 910, y: 375 }, { x: 955, y: 390 }, { x: 1000, y: 425 }, { x: 1035, y: 460 }
     ];
     // W6: Fuel Cell → Lampu
     paths.w6 = [
-      { x: 960, y: 300 }, { x: 900, y: 330 }, { x: 750, y: 310 }, { x: 700, y: 260 }
+      { x: 1040, y: 465 }, { x: 990, y: 500 }, { x: 930, y: 545 }, { x: 860, y: 545 }, { x: 820, y: 500 }
     ];
     // W7: PLN → Lampu
     paths.w7 = [
-      { x: 1050, y: 370 }, { x: 900, y: 370 }, { x: 750, y: 320 }, { x: 700, y: 260 }
+      { x: 1080, y: 570 }, { x: 1010, y: 590 }, { x: 930, y: 590 }, { x: 860, y: 570 }, { x: 820, y: 500 }
     ];
     // W8: ESP → Laptop/Ponsel (WiFi)
     paths.w8 = [
-      { x: 580, y: 160 }, { x: 800, y: 100 }, { x: 1050, y: 200 }
+      { x: 390, y: 300 }, { x: 300, y: 430 }, { x: 175, y: 500 }
     ];
   }
 
@@ -216,6 +216,24 @@
         ctx.fill();
         ctx.shadowBlur = 0;
       }
+    }
+
+    // Kabel tetap terlihat meskipun sedang tidak dialiri energi.
+    for (var b = 0; b < keys.length; b++) {
+      var baseKey = keys[b];
+      var basePath = paths[baseKey];
+      ctx.beginPath();
+      ctx.strokeStyle = baseKey === 'w8'
+        ? 'rgba(129,199,132,0.18)'
+        : 'rgba(255,255,255,0.12)';
+      ctx.lineWidth = baseKey === 'w8' ? 1 : 2;
+      if (baseKey === 'w8') ctx.setLineDash([4, 4]);
+      ctx.moveTo(basePath[0].x, basePath[0].y);
+      for (var p = 1; p < basePath.length; p++) {
+        ctx.lineTo(basePath[p].x, basePath[p].y);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
     }
   }
 

@@ -86,6 +86,22 @@
   function drawSun(ctx, state) {
     var sx = 140, sy = 70;
     var intensity = state.sun;
+
+    if (intensity <= 0.02) {
+      ctx.beginPath();
+      ctx.arc(sx, sy, 27, 0, Math.PI * 2);
+      ctx.fillStyle = '#E5E7EB';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(sx + 12, sy - 8, 25, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+      ctx.font = 'bold 10px Inter, sans-serif';
+      ctx.fillText('MALAM', sx - 22, sy + 48);
+      return;
+    }
+
     var radius = 30 + intensity * 15;
     var glowAlpha = intensity * state.tCloud * 0.4;
 
@@ -182,7 +198,7 @@
 
   // ============ 1 & 2. WADUK + PANEL ============
   function drawReservoirAndPanel(ctx, state) {
-    var rx = 60, ry = 200, rw = 350, rh = 160;
+    var rx = 35, ry = 245, rw = 270, rh = 165;
 
     // Waduk (kolam air)
     var waterGrad = ctx.createLinearGradient(rx, ry + 50, rx, ry + rh);
@@ -216,7 +232,7 @@
     }
 
     // Panel surya terapung
-    var panelX = 160, panelY = 230;
+    var panelX = 90, panelY = 255;
     var panelW = 150, panelH = 60;
     var bob = reducedMotion ? 0 : Math.sin(animTime * 1.5) * 2;
 
@@ -267,7 +283,7 @@
 
   // ============ 7. KOTAK IoT ============
   function drawIoTBox(ctx, state) {
-    var bx = 445, by = 130, bw = 190, bh = 120;
+    var bx = 335, by = 270, bw = 205, bh = 135;
 
     // Box body
     ctx.fillStyle = '#263238';
@@ -356,7 +372,7 @@
 
   // ============ 3. BATERAI ============
   function drawBattery(ctx, state) {
-    var bx = 470, by = 275, bw = 140, bh = 50;
+    var bx = 395, by = 125, bw = 165, bh = 58;
 
     // Casing
     ctx.fillStyle = '#37474F';
@@ -404,14 +420,10 @@
 
   // ============ 6. LAMPU LED ============
   function drawLamp(ctx, state) {
-    var lx = 690, ly = 215;
+    var lx = 820, ly = 500;
     var lampPower = 0;
-    if (state.lampOn) {
-      if (state.relay.ch3 || state.relay.ch4) {
-        lampPower = 1;
-      } else if (state.relay.ch1) {
-        lampPower = state.soc > 0.05 || state.pPV > 0.1 ? 1 : 0;
-      }
+    if (state.lampOn && (state.relay.ch1 || state.relay.ch3 || state.relay.ch4)) {
+      lampPower = state.lampPower;
     }
 
     // Glow
@@ -443,13 +455,13 @@
     ctx.font = '9px Inter, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('LED ' + (lampPower > 0 ? 'ON' : 'OFF'), lx, ly + 40);
-    ctx.fillText('1W', lx, ly + 50);
+    ctx.fillText(state.lampPower.toFixed(1) + ' W', lx, ly + 50);
     ctx.textAlign = 'left';
   }
 
   // ============ 11. ELEKTROLISER + TABUNG ============
   function drawElectrolyzer(ctx, state) {
-    var ex = 780, ey = 130;
+    var ex = 870, ey = 180;
 
     // Elektroliser box
     ctx.fillStyle = '#1A237E';
@@ -463,8 +475,9 @@
     ctx.fillStyle = '#E8EAF6';
     ctx.font = 'bold 9px Inter, sans-serif';
     ctx.fillText('Elektroliser', ex + 10, ey + 18);
+    ctx.fillText('→ Tabung H₂', ex + 10, ey + 30);
     ctx.font = '8px monospace';
-    ctx.fillText('2.0V  0.5A', ex + 10, ey + 32);
+    ctx.fillText(state.electrolyzerPower.toFixed(1) + ' W', ex + 10, ey + 42);
 
     // Indikator aktif
     if (state.relay.ch2) {
@@ -478,10 +491,10 @@
     }
 
     // Tabung H₂
-    drawTube(ctx, ex + 5, ey + 65, 35, 130, state.h2, C.H2_TUBE_MAX, '#2196F3', 'H₂', state.relay.ch2);
+    drawTube(ctx, ex + 5, ey + 65, 35, 130, state.h2, state.h2Capacity, '#2196F3', 'H₂', state.relay.ch2);
 
     // Tabung O₂
-    drawTube(ctx, ex + 55, ey + 65, 35, 130, state.o2, C.H2_TUBE_MAX, '#F44336', 'O₂', state.relay.ch2);
+    drawTube(ctx, ex + 55, ey + 65, 35, 130, state.o2, state.o2Capacity, '#F44336', 'O₂', state.relay.ch2);
   }
 
   function drawTube(ctx, x, y, w, h, volume, maxVol, color, label, bubbling) {
@@ -549,7 +562,7 @@
 
   // ============ 12. FUEL CELL ============
   function drawFuelCell(ctx, state) {
-    var fx = 920, fy = 260, fw = 80, fh = 60;
+    var fx = 1035, fy = 430, fw = 105, fh = 72;
 
     ctx.fillStyle = state.relay.ch3 ? '#1B5E20' : '#263238';
     roundRect(ctx, fx, fy, fw, fh, 5);
@@ -564,7 +577,8 @@
     ctx.font = 'bold 9px Inter, sans-serif';
     ctx.fillText('Fuel Cell', fx + 10, fy + 18);
     ctx.font = '8px monospace';
-    ctx.fillText('PEM 50%', fx + 10, fy + 32);
+    ctx.fillText('← H₂ tabung', fx + 10, fy + 30);
+    ctx.fillText('PEM 50%', fx + 10, fy + 42);
 
     if (state.relay.ch3) {
       ctx.fillStyle = '#A5D6A7';
@@ -583,7 +597,7 @@
   // ============ 8 & 9. DASHBOARD ============
   function drawDashboards(ctx, state) {
     // Laptop
-    var lx = 1040, ly = 175;
+    var lx = 60, ly = 500;
     // Screen
     ctx.fillStyle = '#0D1B2A';
     roundRect(ctx, lx, ly, 130, 80, 4);
@@ -627,47 +641,15 @@
     ctx.fillStyle = '#4CAF50';
     ctx.fillRect(lx + 96, ly + 65 - batH, 10, batH);
     // H2 bar
-    var h2H = (state.h2 / C.H2_TUBE_MAX) * 45;
+    var h2H = (state.h2 / state.h2Capacity) * 45;
     ctx.fillStyle = '#42A5F5';
     ctx.fillRect(lx + 109, ly + 65 - h2H, 8, h2H);
 
-    // Ponsel
-    var px = 1090, py = 285;
-    ctx.fillStyle = '#1a1a2e';
-    roundRect(ctx, px, py, 55, 85, 6);
-    ctx.fill();
-    ctx.strokeStyle = '#546E7A';
-    ctx.lineWidth = 1;
-    roundRect(ctx, px, py, 55, 85, 6);
-    ctx.stroke();
-
-    // Screen
-    ctx.fillStyle = '#0D1B2A';
-    ctx.fillRect(px + 3, py + 8, 49, 65);
-
-    ctx.fillStyle = '#4FC3F7';
-    ctx.font = 'bold 6px monospace';
-    ctx.fillText('IoT MSTR', px + 7, py + 18);
-    ctx.fillStyle = '#A5D6A7';
-    ctx.font = '6px monospace';
-    ctx.fillText('PV ' + state.pPV.toFixed(1) + 'W', px + 7, py + 28);
-    ctx.fillText('SOC ' + (state.soc * 100).toFixed(0) + '%', px + 7, py + 38);
-    ctx.fillText('H₂ ' + state.h2.toFixed(0) + 'mL', px + 7, py + 48);
-    ctx.fillStyle = state.mode === 'DEFISIT' ? '#F44336' : '#4CAF50';
-    ctx.font = 'bold 6px monospace';
-    ctx.fillText(state.mode, px + 7, py + 60);
-
-    // Home button
-    ctx.beginPath();
-    ctx.arc(px + 27.5, py + 79, 3, 0, Math.PI * 2);
-    ctx.strokeStyle = '#546E7A';
-    ctx.lineWidth = 0.5;
-    ctx.stroke();
   }
 
   // ============ PLN ============
   function drawPLN(ctx, state) {
-    var px = 1020, py = 390, pw = 70, ph = 35;
+    var px = 1040, py = 570, pw = 90, ph = 40;
 
     ctx.fillStyle = state.relay.ch4 ? '#F57F17' : '#37474F';
     roundRect(ctx, px, py, pw, ph, 4);
@@ -681,7 +663,7 @@
     ctx.font = 'bold 9px Inter, sans-serif';
     ctx.fillText('PLN', px + 8, py + 15);
     ctx.font = '7px monospace';
-    ctx.fillText('Cadangan', px + 8, py + 27);
+    ctx.fillText(state.relay.ch4 ? 'Aktif ' + state.pPLN.toFixed(1) + ' W' : 'Siaga', px + 8, py + 27);
   }
 
   // ============ TAG DAYA ============
@@ -690,11 +672,11 @@
     ctx.textAlign = 'center';
 
     var tags = [
-      { x: 370, y: 235, val: state.pPV, label: 'PV', color: '#FFD54F' },
-      { x: 540, y: 265, val: Math.abs(state.pNet), label: state.pNet >= 0 ? '→BAT' : 'BAT→', color: '#4CAF50' },
-      { x: 690, y: 200, val: state.flows.w3, label: 'LED', color: '#FFF9C4' },
-      { x: 790, y: 155, val: state.flows.w4, label: 'EL', color: '#42A5F5' },
-      { x: 940, y: 250, val: state.flows.w6, label: 'FC', color: '#A5D6A7' },
+      { x: 285, y: 275, val: state.pPV, label: 'PV', color: '#FFD54F' },
+      { x: 430, y: 235, val: Math.abs(state.pNet), label: state.pNet >= 0 ? '→BAT' : 'BAT→', color: '#4CAF50' },
+      { x: 700, y: 430, val: state.flows.w3, label: 'LED', color: '#FFF9C4' },
+      { x: 700, y: 240, val: state.flows.w4, label: 'EL', color: '#42A5F5' },
+      { x: 1010, y: 465, val: state.flows.w6, label: 'FC', color: '#A5D6A7' },
     ];
 
     for (var i = 0; i < tags.length; i++) {
@@ -718,14 +700,14 @@
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
     var labels = [
       { x: 130, y: 55, text: '① Matahari' },
-      { x: 160, y: 210, text: '① Waduk + ② Panel Surya' },
-      { x: 445, y: 125, text: '④⑤⑦ Kotak IoT (ESP32, INA219, Relay)' },
-      { x: 470, y: 342, text: '③ Baterai Li-ion' },
-      { x: 660, y: 270, text: '⑥ Lampu LED' },
-      { x: 785, y: 125, text: '⑪ Elektroliser' },
-      { x: 920, y: 340, text: '⑫ Fuel Cell' },
-      { x: 1040, y: 168, text: '⑧ Laptop' },
-      { x: 1088, y: 378, text: '⑨ Ponsel' },
+      { x: 60, y: 225, text: '① Waduk + ② Panel Surya' },
+      { x: 335, y: 260, text: '④⑤⑦ Kotak IoT (ESP32, INA219, Relay)' },
+      { x: 395, y: 115, text: '③ Baterai Li-ion' },
+      { x: 790, y: 550, text: '⑥ Lampu LED' },
+      { x: 865, y: 165, text: '⑪ Elektroliser' },
+      { x: 1035, y: 520, text: '⑫ Fuel Cell' },
+      { x: 60, y: 490, text: '⑧ Laptop' },
+      { x: 245, y: 490, text: '⑨ Ponsel' },
     ];
     for (var i = 0; i < labels.length; i++) {
       ctx.fillText(labels[i].text, labels[i].x, labels[i].y);

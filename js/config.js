@@ -49,6 +49,7 @@ window.Config = {
   V_M: 24.465,          // L/mol — volume molar gas ideal 25°C 1 atm
   ETA_F_DEFAULT: 1.0,   // efisiensi Faraday default
   H2_TUBE_MAX: 50,      // mL — kapasitas tabung H₂
+  O2_TUBE_MAX: 50,      // mL — kapasitas tabung O₂
 
   // === Fuel Cell (LKM-3) ===
   ETA_FC: 0.50,         // efisiensi fuel cell
@@ -63,7 +64,8 @@ window.Config = {
     DEFICIT_V:    3.40,  // V — ambang defisit
     DEFICIT_DELAY: 5,    // detik simulasi
     DEFICIT_H2:   5,     // mL — stok minimum untuk fuel cell
-    NORMAL_V:     3.80   // V — kembali ke NORMAL
+    NORMAL_V:     3.80,  // V — kembali ke NORMAL
+    GRID_SOC:     0.20   // PLN aktif malam hari saat SOC baterai <= 20%
   },
 
   // === EMS v1 Thresholds (sebelum perbaikan) ===
@@ -75,7 +77,7 @@ window.Config = {
   // === Awan (asumsi) ===
   T_CLOUD_MIN: 0.15,    // transmitansi minimum (awan tebal)
   CLOUD_DEFAULT_DENSITY: 0.7,
-  CLOUD_DEFAULT_SPEED: 12,  // px/detik
+  CLOUD_DEFAULT_SPEED: 5,   // px/detik
   CLOUD_COUNT_DEFAULT: 2,
 
   // === Waktu ===

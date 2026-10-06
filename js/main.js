@@ -9,7 +9,7 @@
 
   // === State Simulasi ===
   var state = {
-    t: 0,
+    t: 21600,
     sun: 1.0,
     G: 0,
     tCloud: 1,
@@ -23,10 +23,13 @@
     vOC: 3.9,
     iBat: 0,
     pNet: 0,
+    pPLN: 0,
     mode: 'NORMAL',
     relay: { ch1: true, ch2: false, ch3: false, ch4: false },
     h2: C.DEFAULT_H2,
     o2: 0,
+    h2Capacity: C.H2_TUBE_MAX,
+    o2Capacity: C.O2_TUBE_MAX,
     h2Full: false,
     h2Depleted: false,
     pFC: 0,
@@ -37,9 +40,14 @@
       pLoad: 0, pElectrolyzer: 0, elActive: false
     },
     lampOn: C.DEFAULT_LAMP,
+    lampPower: C.P_LAMP,
+    electrolyzerPower: C.V_EL * C.I_EL,
     emsVersion: C.DEFAULT_EMS_VERSION,
     etaF: C.ETA_F_DEFAULT,
     timeScale: C.TIME_SCALE_DEFAULT,
+    dayNightAuto: true,
+    dayPhase: 'SIANG',
+    scenario: 'Standar',
     paused: false,
     tagOn: true,
     labelsOn: false,
@@ -84,8 +92,8 @@
     var displayW = containerW;
     var displayH = displayW / ratio;
 
-    // Batasi tinggi
-    var maxH = window.innerHeight * 0.65;
+    // Sisakan ruang untuk header dan jarak visual di mode landscape.
+    var maxH = Math.max(320, window.innerHeight - 126);
     if (displayH > maxH) {
       displayH = maxH;
       displayW = displayH * ratio;
@@ -160,6 +168,8 @@
       while (remaining > 0) {
         var dt = Math.min(remaining, 1.0);
 
+        updateDayNight();
+
         // 1. Gerakkan awan, hitung T_awan
         Weather.update(dt, state);
 
@@ -200,6 +210,26 @@
     UI.updateInfo(state);
 
     requestAnimationFrame(frame);
+  }
+
+  function updateDayNight() {
+    if (!state.dayNightAuto) return;
+
+    var minutes = (state.t % 86400) / 60;
+    var sun = 0;
+    if (minutes >= 360 && minutes < 1080) {
+      var daylightProgress = (minutes - 360) / 720;
+      sun = Math.sin(daylightProgress * Math.PI);
+    }
+
+    state.sun = Math.max(0, sun);
+    state.dayPhase = minutes >= 360 && minutes < 1080 ? 'SIANG' : 'MALAM';
+    var sunSlider = document.getElementById('sun-slider');
+    var sunValue = document.getElementById('sun-value');
+    if (sunSlider && sunValue) {
+      sunSlider.value = Math.round(state.sun * 100);
+      sunValue.textContent = Math.round(state.sun * 100) + '%';
+    }
   }
 
   // Mulai saat DOM ready

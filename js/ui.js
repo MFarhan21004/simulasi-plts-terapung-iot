@@ -22,6 +22,8 @@
     var sunSlider = document.getElementById('sun-slider');
     var sunVal = document.getElementById('sun-value');
     sunSlider.addEventListener('input', function() {
+      state.dayNightAuto = false;
+      document.getElementById('auto-day-night').checked = false;
       state.sun = parseFloat(this.value) / 100;
       sunVal.textContent = this.value + '%';
     });
@@ -71,6 +73,10 @@
       state.timeScale = parseInt(this.value);
     });
 
+    document.getElementById('auto-day-night').addEventListener('change', function() {
+      state.dayNightAuto = this.checked;
+    });
+
     document.getElementById('btn-pause').addEventListener('click', function() {
       state.paused = !state.paused;
       this.textContent = state.paused ? '▶ Lanjut' : '⏸ Jeda';
@@ -108,9 +114,39 @@
     var h2Slider = document.getElementById('h2-init');
     var h2Val = document.getElementById('h2-init-value');
     h2Slider.addEventListener('input', function() {
-      state.h2 = parseFloat(this.value);
+      state.h2 = Math.min(parseFloat(this.value), state.h2Capacity);
       state.o2 = state.h2 / 2;
-      h2Val.textContent = this.value + ' mL';
+      h2Val.textContent = state.h2 + ' mL';
+    });
+
+    var lampPowerSlider = document.getElementById('lamp-power');
+    var lampPowerVal = document.getElementById('lamp-power-value');
+    lampPowerSlider.addEventListener('input', function() {
+      state.lampPower = parseFloat(this.value);
+      lampPowerVal.textContent = state.lampPower.toFixed(1) + ' W';
+    });
+
+    var electrolyzerPowerSlider = document.getElementById('electrolyzer-power');
+    var electrolyzerPowerVal = document.getElementById('electrolyzer-power-value');
+    electrolyzerPowerSlider.addEventListener('input', function() {
+      state.electrolyzerPower = parseFloat(this.value);
+      electrolyzerPowerVal.textContent = state.electrolyzerPower.toFixed(1) + ' W';
+    });
+
+    var h2CapacitySlider = document.getElementById('h2-capacity');
+    var h2CapacityVal = document.getElementById('h2-capacity-value');
+    h2CapacitySlider.addEventListener('input', function() {
+      state.h2Capacity = parseFloat(this.value);
+      state.h2 = Math.min(state.h2, state.h2Capacity);
+      h2CapacityVal.textContent = state.h2Capacity + ' mL';
+    });
+
+    var o2CapacitySlider = document.getElementById('o2-capacity');
+    var o2CapacityVal = document.getElementById('o2-capacity-value');
+    o2CapacitySlider.addEventListener('input', function() {
+      state.o2Capacity = parseFloat(this.value);
+      state.o2 = Math.min(state.o2, state.o2Capacity);
+      o2CapacityVal.textContent = state.o2Capacity + ' mL';
     });
 
     // === Tampilan ===
@@ -148,7 +184,7 @@
    * Reset state ke default
    */
   function resetState() {
-    state.t = 0;
+    state.t = 21600;
     state.sun = 1.0;
     state.G = 0;
     state.tCloud = 1;
@@ -161,20 +197,28 @@
     state.vOC = 3.9;
     state.iBat = 0;
     state.pNet = 0;
+    state.pPLN = 0;
     state.tCell = C.T_AMB;
     state.mode = 'NORMAL';
     state.relay = { ch1: true, ch2: false, ch3: false, ch4: false };
     state.h2 = C.DEFAULT_H2;
     state.o2 = 0;
+    state.h2Capacity = C.H2_TUBE_MAX;
+    state.o2Capacity = C.O2_TUBE_MAX;
     state.h2Full = false;
     state.h2Depleted = false;
     state.pFC = 0;
     state.eDay = { pv: 0, load: 0, h2chem: 0, fc: 0 };
     state.flows = { w1: 0, w2: 0, w2r: 0, w3: 0, w4: 0, w5: 0, w6: 0, w7: 0, w8: 0, pLoad: 0, pElectrolyzer: 0, elActive: false };
     state.lampOn = C.DEFAULT_LAMP;
+    state.lampPower = C.P_LAMP;
+    state.electrolyzerPower = C.V_EL * C.I_EL;
     state.emsVersion = C.DEFAULT_EMS_VERSION;
     state.etaF = C.ETA_F_DEFAULT;
     state.timeScale = C.TIME_SCALE_DEFAULT;
+    state.dayNightAuto = true;
+    state.dayPhase = 'SIANG';
+    state.scenario = 'Standar';
     state.paused = false;
     state.tagOn = true;
     state.labelsOn = false;
@@ -191,11 +235,12 @@
     document.getElementById('cloud-mode').value = 'auto';
     document.getElementById('cloud-density').value = 70;
     document.getElementById('cloud-density-value').textContent = '70%';
-    document.getElementById('wind-speed').value = 12;
-    document.getElementById('wind-speed-value').textContent = '12 px/s';
+    document.getElementById('wind-speed').value = 5;
+    document.getElementById('wind-speed-value').textContent = '5 px/s';
     document.getElementById('cloud-count').value = 2;
     document.getElementById('cloud-count-value').textContent = '2';
     document.getElementById('time-scale').value = 60;
+    document.getElementById('auto-day-night').checked = true;
     document.getElementById('btn-pause').textContent = '⏸ Jeda';
     document.getElementById('lamp-switch').checked = true;
     document.getElementById('ems-version').value = 'v2';
@@ -205,6 +250,14 @@
     document.getElementById('soc-init-value').textContent = '70%';
     document.getElementById('h2-init').value = 0;
     document.getElementById('h2-init-value').textContent = '0 mL';
+    document.getElementById('lamp-power').value = 1;
+    document.getElementById('lamp-power-value').textContent = '1.0 W';
+    document.getElementById('electrolyzer-power').value = 1;
+    document.getElementById('electrolyzer-power-value').textContent = '1.0 W';
+    document.getElementById('h2-capacity').value = 50;
+    document.getElementById('h2-capacity-value').textContent = '50 mL';
+    document.getElementById('o2-capacity').value = 50;
+    document.getElementById('o2-capacity-value').textContent = '50 mL';
     document.getElementById('label-switch').checked = false;
     document.getElementById('tag-switch').checked = true;
     document.getElementById('particle-switch').checked = true;
@@ -216,14 +269,27 @@
   function applyPreset(name) {
     resetState();
     resetControls();
+    state.paused = false;
+    document.getElementById('btn-pause').textContent = '⏸ Jeda';
+    var scenarioNames = {
+      'siang-cerah': 'Siang cerah',
+      'awan-lewat': 'Awan lewat',
+      'mendung': 'Mendung',
+      'malam-defisit': 'Malam / defisit',
+      'kendala-v1': 'Kendala EMS v1',
+      'perbaikan-v2': 'Perbaikan EMS v2'
+    };
+    state.scenario = scenarioNames[name] || 'Standar';
 
     switch (name) {
       case 'siang-cerah':
+        state.dayNightAuto = false;
         state.sun = 1.0;
         state.soc = 0.85;
         state.eBat = 0.85 * C.E_BAT_MAX;
         Weather.init(0, 0, 0);
         document.getElementById('sun-slider').value = 100;
+        document.getElementById('auto-day-night').checked = false;
         document.getElementById('soc-init').value = 85;
         document.getElementById('soc-init-value').textContent = '85%';
         document.getElementById('cloud-count').value = 0;
@@ -231,8 +297,9 @@
         break;
 
       case 'awan-lewat':
+        state.dayNightAuto = false;
         state.sun = 1.0;
-        Weather.init(1, 0.9, 15);
+        Weather.init(1, 0.9, 6);
         document.getElementById('cloud-density').value = 90;
         document.getElementById('cloud-density-value').textContent = '90%';
         document.getElementById('cloud-count').value = 1;
@@ -240,6 +307,7 @@
         break;
 
       case 'mendung':
+        state.dayNightAuto = false;
         state.sun = 1.0;
         Weather.init(3, 1.0, 0);
         Weather.closeCloud();
@@ -252,6 +320,7 @@
         break;
 
       case 'malam-defisit':
+        state.dayNightAuto = false;
         state.sun = 0;
         state.soc = 0.12;
         state.eBat = 0.12 * C.E_BAT_MAX;
@@ -259,6 +328,7 @@
         state.o2 = 20;
         Weather.init(0, 0, 0);
         document.getElementById('sun-slider').value = 0;
+        document.getElementById('auto-day-night').checked = false;
         document.getElementById('sun-value').textContent = '0%';
         document.getElementById('soc-init').value = 12;
         document.getElementById('soc-init-value').textContent = '12%';
@@ -269,6 +339,7 @@
         break;
 
       case 'kendala-v1':
+        state.dayNightAuto = false;
         state.sun = 1.0;
         state.soc = 0.93;
         state.eBat = 0.93 * C.E_BAT_MAX;
@@ -282,6 +353,7 @@
         break;
 
       case 'perbaikan-v2':
+        state.dayNightAuto = false;
         state.sun = 1.0;
         state.soc = 0.93;
         state.eBat = 0.93 * C.E_BAT_MAX;
@@ -305,16 +377,20 @@
     setText('info-vpv', (state.vPV || 0).toFixed(2) + ' V');
     setText('info-ipv', (state.iPV || 0).toFixed(3) + ' A');
     setText('info-ppv', state.pPV.toFixed(2) + ' W');
+    setText('info-ppln', (state.pPLN || 0).toFixed(2) + ' W');
     setText('info-vbat', state.vBat.toFixed(2) + ' V');
     setText('info-soc', (state.soc * 100).toFixed(1) + '%');
     setText('info-mode', state.mode);
+    setText('info-scenario', state.scenario || 'Standar');
+    var lampSource = state.relay.ch4 ? 'PLN' : state.relay.ch3 ? 'Fuel Cell' : state.relay.ch1 ? 'Panel / baterai' : '-';
+    setText('info-lamp-source', lampSource);
     var relayStr = '';
     if (state.relay.ch1) relayStr += 'CH1 ';
     if (state.relay.ch2) relayStr += 'CH2 ';
     if (state.relay.ch3) relayStr += 'CH3 ';
     if (state.relay.ch4) relayStr += 'CH4 ';
     setText('info-relay', relayStr || '-');
-    setText('info-pel', state.relay.ch2 ? (C.V_EL * C.I_EL).toFixed(1) + ' W' : '0 W');
+    setText('info-pel', state.relay.ch2 ? state.electrolyzerPower.toFixed(1) + ' W' : '0 W');
     setText('info-h2', state.h2.toFixed(1) + ' mL');
     setText('info-o2', state.o2.toFixed(1) + ' mL');
     setText('info-pfc', (state.pFC || 0).toFixed(2) + ' W');
@@ -323,6 +399,7 @@
     setText('info-eload', state.eDay.load.toFixed(3) + ' Wh');
     setText('info-eh2', state.eDay.h2chem.toFixed(3) + ' Wh');
     setText('info-time', formatTime(state.t));
+    setText('info-period', state.dayPhase || (state.sun > 0 ? 'SIANG' : 'MALAM'));
   }
 
   function setText(id, text) {

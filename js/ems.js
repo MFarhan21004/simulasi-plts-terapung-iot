@@ -22,23 +22,39 @@
   function stepV2(state, dt) {
     var v = state.vBat;
     var th = C.EMS_V2;
+    var baseLoad = C.P_ESP + (state.lampOn ? state.lampPower : 0);
+    var lowSolar = state.pPV <= baseLoad;
+    var gridNeeded = lowSolar && state.soc <= th.GRID_SOC;
+    var powerSurplus = state.pPV > baseLoad + state.electrolyzerPower;
+    var loadCoveredBySolar = state.pPV >= baseLoad;
 
-    // Cek tabung H₂ penuh
-    if (state.h2 >= C.H2_TUBE_MAX) {
-      state.h2Full = true;
+    // Status penuh harus mengikuti volume aktual setelah H₂ dipakai fuel cell.
+    state.h2Full = state.h2 >= state.h2Capacity;
+
+    // Saat matahari kembali cukup untuk beban utama, lepas dari sumber malam.
+    if (state.mode === 'DEFISIT' && loadCoveredBySolar) {
+      state.mode = powerSurplus && !state.h2Full ? 'SURPLUS' : 'NORMAL';
+      state.relay.ch1 = true;
+      state.relay.ch2 = powerSurplus && !state.h2Full;
+      state.relay.ch3 = false;
+      state.relay.ch4 = false;
+      deficitTimer = 0;
+      return;
     }
 
     switch (state.mode) {
       case 'NORMAL':
+        state.relay.ch3 = false;
+        state.relay.ch4 = false;
         // Cek surplus
-        if (v >= th.SURPLUS_V && state.pPV > state.flows.pLoad - state.flows.pElectrolyzer) {
-          if (!state.h2Full && state.h2 < C.H2_TUBE_MAX) {
+        if (powerSurplus) {
+          if (!state.h2Full && state.h2 < state.h2Capacity) {
             state.mode = 'SURPLUS';
             state.relay.ch2 = true;
           }
         }
         // Cek defisit
-        if (v <= th.DEFICIT_V) {
+        if (!loadCoveredBySolar && (v <= th.DEFICIT_V || gridNeeded)) {
           deficitTimer += dt;
           if (deficitTimer >= th.DEFICIT_DELAY) {
             state.mode = 'DEFISIT';
@@ -60,16 +76,18 @@
       case 'SURPLUS':
         // Elektroliser aktif
         state.relay.ch2 = true;
+        state.relay.ch3 = false;
+        state.relay.ch4 = false;
         // Keluar dari surplus jika tegangan turun
-        if (v < th.SURPLUS_OFF || state.h2 >= C.H2_TUBE_MAX) {
+        if (!powerSurplus || state.h2 >= state.h2Capacity) {
           state.mode = 'NORMAL';
           state.relay.ch2 = false;
-          if (state.h2 >= C.H2_TUBE_MAX) {
+          if (state.h2 >= state.h2Capacity) {
             state.h2Full = true;
           }
         }
         // Cek defisit bahkan saat surplus (kasus edge)
-        if (v <= th.DEFICIT_V) {
+        if (!loadCoveredBySolar && (v <= th.DEFICIT_V || gridNeeded)) {
           deficitTimer += dt;
           if (deficitTimer >= th.DEFICIT_DELAY) {
             state.mode = 'DEFISIT';
@@ -87,13 +105,15 @@
 
       case 'DEFISIT':
         // Fuel cell atau PLN sedang memasok
+        state.relay.ch1 = false;
+        state.relay.ch2 = false;
         // Cek jika H₂ habis dan masih pakai fuel cell
         if (state.relay.ch3 && state.h2 < 0.1) {
           state.relay.ch3 = false;
           state.relay.ch4 = true;
         }
         // Kembali ke normal jika tegangan cukup
-        if (v >= th.NORMAL_V) {
+        if (v >= th.NORMAL_V && !gridNeeded) {
           state.mode = 'NORMAL';
           state.relay.ch1 = true;
           state.relay.ch3 = false;
@@ -110,9 +130,21 @@
   function stepV1(state, dt) {
     var v = state.vBat;
     var th = C.EMS_V1;
+    var baseLoad = C.P_ESP + (state.lampOn ? state.lampPower : 0);
+
+    if (state.pPV >= baseLoad) {
+      state.mode = state.pPV > baseLoad + state.electrolyzerPower && state.h2 < state.h2Capacity
+        ? 'SURPLUS'
+        : 'NORMAL';
+      state.relay.ch1 = true;
+      state.relay.ch2 = state.mode === 'SURPLUS';
+      state.relay.ch3 = false;
+      state.relay.ch4 = false;
+      return;
+    }
 
     // Elektroliser: ON jika V ≥ 4.1V, OFF jika di bawah (tanpa histeresis!)
-    if (v >= th.SURPLUS_V && state.pPV > 0 && state.h2 < C.H2_TUBE_MAX) {
+    if (v >= th.SURPLUS_V && state.pPV > baseLoad + state.electrolyzerPower && state.h2 < state.h2Capacity) {
       state.relay.ch2 = true;
       state.mode = 'SURPLUS';
     } else {
