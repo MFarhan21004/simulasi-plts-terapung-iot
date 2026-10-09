@@ -12,12 +12,12 @@
   <!-- ============ HEADER ============ -->
   <header class="header">
     <div>
-      <h1>⚡ Simulasi PLTS Terapung + Baterai + H₂ Hijau</h1>
+      <h1>Simulasi PLTS Terapung + Baterai + H₂ Hijau</h1>
       <span class="header-subtitle">LKM-3 MSTR Energi — Praktek Rekayasa | Kelompok 1</span>
     </div>
     <div class="header-buttons">
-      <button id="btn-pause" class="btn btn-primary" aria-label="Jeda simulasi">⏸ Jeda</button>
-      <button id="btn-reset" class="btn btn-danger" aria-label="Reset simulasi">🔄 Reset</button>
+      <button id="btn-pause" class="btn btn-primary" aria-label="Jeda simulasi">Jeda</button>
+      <button id="btn-reset" class="btn btn-danger" aria-label="Reset simulasi">Reset</button>
     </div>
   </header>
 
@@ -34,20 +34,20 @@
 
       <!-- ☀ Matahari -->
       <div class="panel-section">
-        <h3><span class="icon">☀️</span> Matahari</h3>
+        <h3>Matahari</h3>
         <div class="control-row">
           <label for="sun-slider">Intensitas cahaya</label>
           <input type="range" id="sun-slider" min="0" max="100" value="100" aria-label="Intensitas cahaya matahari 0-100%">
-          <span class="value" id="sun-value">100%</span>
+          <span class="num-field"><input type="number" class="num" id="sun-slider-value" min="0" max="100" step="1" aria-label="Nilai untuk sun-slider, dapat diketik"><span class="unit">%</span></span>
         </div>
       </div>
 
       <!-- ☁ Awan -->
       <div class="panel-section">
-        <h3><span class="icon">☁️</span> Awan</h3>
+        <h3>Awan</h3>
         <div class="btn-row">
-          <button id="btn-close-cloud" class="btn btn-sm" aria-label="Tutup awan di atas panel">☁ Tutup</button>
-          <button id="btn-open-cloud" class="btn btn-sm" aria-label="Buka awan dari atas panel">🌤 Buka</button>
+          <button id="btn-close-cloud" class="btn btn-sm" aria-label="Tutup awan di atas panel">Tutup awan</button>
+          <button id="btn-open-cloud" class="btn btn-sm" aria-label="Buka awan dari atas panel">Buka awan</button>
         </div>
         <div class="control-row">
           <label for="cloud-mode">Mode gerak</label>
@@ -59,23 +59,23 @@
         <div class="control-row">
           <label for="cloud-density">Kerapatan</label>
           <input type="range" id="cloud-density" min="0" max="100" value="70" aria-label="Kerapatan awan 0-100%">
-          <span class="value" id="cloud-density-value">70%</span>
+          <span class="num-field"><input type="number" class="num" id="cloud-density-value" min="0" max="100" step="1" aria-label="Nilai untuk cloud-density, dapat diketik"><span class="unit">%</span></span>
         </div>
         <div class="control-row">
           <label for="wind-speed">Kec. angin</label>
           <input type="range" id="wind-speed" min="0" max="30" value="5" aria-label="Kecepatan angin 0-30 px/detik">
-          <span class="value" id="wind-speed-value">5 px/s</span>
+          <span class="num-field"><input type="number" class="num" id="wind-speed-value" min="0" max="30" step="1" aria-label="Nilai untuk wind-speed, dapat diketik"><span class="unit">px/s</span></span>
         </div>
         <div class="control-row">
           <label for="cloud-count">Jumlah awan</label>
           <input type="range" id="cloud-count" min="0" max="3" value="2" step="1" aria-label="Jumlah awan 1-3">
-          <span class="value" id="cloud-count-value">2</span>
+          <span class="num-field"><input type="number" class="num" id="cloud-count-value" min="0" max="3" step="1" aria-label="Nilai untuk cloud-count, dapat diketik"></span>
         </div>
       </div>
 
       <!-- ⏱ Waktu -->
       <div class="panel-section">
-        <h3><span class="icon">⏱️</span> Waktu</h3>
+        <h3>Waktu</h3>
         <div class="control-row">
           <label for="time-scale">Skala waktu</label>
           <select id="time-scale" aria-label="Skala percepatan waktu simulasi">
@@ -105,7 +105,7 @@
 
       <!-- ⚡ Beban & EMS -->
       <div class="panel-section">
-        <h3><span class="icon">⚡</span> Beban & EMS</h3>
+        <h3>Beban & EMS</h3>
         <div class="control-row">
           <label for="lamp-switch">Lampu LED</label>
           <label class="toggle-switch">
@@ -123,43 +123,43 @@
         <div class="control-row">
           <label for="eta-f">Efisiensi Faraday η<sub>F</sub></label>
           <input type="range" id="eta-f" min="50" max="100" value="100" aria-label="Efisiensi Faraday 50-100%">
-          <span class="value" id="eta-f-value">100%</span>
+          <span class="num-field"><input type="number" class="num" id="eta-f-value" min="50" max="100" step="1" aria-label="Nilai untuk eta-f, dapat diketik"><span class="unit">%</span></span>
         </div>
         <div class="control-row">
           <label for="soc-init">SOC awal</label>
           <input type="range" id="soc-init" min="0" max="100" value="70" aria-label="State of Charge awal baterai 0-100%">
-          <span class="value" id="soc-init-value">70%</span>
+          <span class="num-field"><input type="number" class="num" id="soc-init-value" min="0" max="100" step="1" aria-label="Nilai untuk soc-init, dapat diketik"><span class="unit">%</span></span>
         </div>
         <div class="control-row">
           <label for="h2-init">Stok H₂ awal</label>
           <input type="range" id="h2-init" min="0" max="200" value="0" aria-label="Stok hidrogen awal 0-200 mL">
-          <span class="value" id="h2-init-value">0 mL</span>
+          <span class="num-field"><input type="number" class="num" id="h2-init-value" min="0" max="200" step="1" aria-label="Nilai untuk h2-init, dapat diketik"><span class="unit">mL</span></span>
         </div>
         <div class="control-row">
           <label for="lamp-power">Daya lampu</label>
           <input type="range" id="lamp-power" min="0" max="5" value="1" step="0.1" aria-label="Daya lampu 0-5 Watt">
-          <span class="value" id="lamp-power-value">1.0 W</span>
+          <span class="num-field"><input type="number" class="num" id="lamp-power-value" min="0" max="5" step="0.1" aria-label="Nilai untuk lamp-power, dapat diketik"><span class="unit">W</span></span>
         </div>
         <div class="control-row">
           <label for="electrolyzer-power">Daya ke H₂</label>
           <input type="range" id="electrolyzer-power" min="0.2" max="2" value="1" step="0.1" aria-label="Daya elektroliser 0.2-2 Watt">
-          <span class="value" id="electrolyzer-power-value">1.0 W</span>
+          <span class="num-field"><input type="number" class="num" id="electrolyzer-power-value" min="0.2" max="2" step="0.1" aria-label="Nilai untuk electrolyzer-power, dapat diketik"><span class="unit">W</span></span>
         </div>
         <div class="control-row">
           <label for="h2-capacity">Kapasitas tangki H₂</label>
           <input type="range" id="h2-capacity" min="10" max="200" value="50" step="5" aria-label="Kapasitas tangki hidrogen 10-200 mL">
-          <span class="value" id="h2-capacity-value">50 mL</span>
+          <span class="num-field"><input type="number" class="num" id="h2-capacity-value" min="10" max="200" step="5" aria-label="Nilai untuk h2-capacity, dapat diketik"><span class="unit">mL</span></span>
         </div>
         <div class="control-row">
           <label for="o2-capacity">Kapasitas tangki O₂</label>
           <input type="range" id="o2-capacity" min="10" max="200" value="50" step="5" aria-label="Kapasitas tangki oksigen 10-200 mL">
-          <span class="value" id="o2-capacity-value">50 mL</span>
+          <span class="num-field"><input type="number" class="num" id="o2-capacity-value" min="10" max="200" step="5" aria-label="Nilai untuk o2-capacity, dapat diketik"><span class="unit">mL</span></span>
         </div>
       </div>
 
       <!-- 👁 Tampilan -->
       <div class="panel-section">
-        <h3><span class="icon">👁️</span> Tampilan</h3>
+        <h3>Tampilan</h3>
         <div class="control-row">
           <label for="label-switch">Label komponen</label>
           <label class="toggle-switch">
@@ -185,7 +185,7 @@
 
       <!-- 📊 Info Panel -->
       <div class="panel-section">
-        <h3><span class="icon">📊</span> Data Simulasi</h3>
+        <h3>Data Simulasi</h3>
         <div class="info-grid">
           <div class="info-item">
             <span class="label">Iradiansi G</span>
@@ -272,30 +272,30 @@
 
       <!-- 🎬 Skenario Bawaan -->
       <div class="panel-section">
-        <h3><span class="icon">🎬</span> Skenario Bawaan</h3>
+        <h3>Skenario Bawaan</h3>
         <div class="preset-grid">
           <button class="preset-btn" data-preset="siang-cerah" aria-label="Preset siang cerah">
-            ☀️ <strong>Siang Cerah</strong><br>
+            <strong>Siang Cerah</strong><br>
             <small>100%, tanpa awan, SOC 85%</small>
           </button>
           <button class="preset-btn" data-preset="awan-lewat" aria-label="Preset awan lewat">
-            ⛅ <strong>Awan Lewat</strong><br>
+            <strong>Awan Lewat</strong><br>
             <small>Satu awan tebal melintas</small>
           </button>
           <button class="preset-btn" data-preset="mendung" aria-label="Preset mendung">
-            ☁️ <strong>Mendung</strong><br>
+            <strong>Mendung</strong><br>
             <small>Awan menutup, daya ~15%</small>
           </button>
           <button class="preset-btn" data-preset="malam-defisit" aria-label="Preset malam defisit">
-            🌙 <strong>Malam/Defisit</strong><br>
+            <strong>Malam/Defisit</strong><br>
             <small>Sol 0%, SOC 12%, H₂ 40mL</small>
           </button>
           <button class="preset-btn" data-preset="kendala-v1" aria-label="Preset kendala EMS v1">
-            ⚠️ <strong>Kendala v1</strong><br>
+            <strong>Kendala v1</strong><br>
             <small>EMS v1, chattering relay</small>
           </button>
           <button class="preset-btn" data-preset="perbaikan-v2" aria-label="Preset perbaikan EMS v2">
-            ✅ <strong>Perbaikan v2</strong><br>
+            <strong>Perbaikan v2</strong><br>
             <small>EMS v2, histeresis stabil</small>
           </button>
         </div>
@@ -307,7 +307,7 @@
   <!-- ============ FOOTER ============ -->
   <footer class="footer">
     <details>
-      <summary>📐 Rumus & Asumsi Model</summary>
+      <summary>Rumus &amp; asumsi model</summary>
       <div class="formulas">
         <div class="formula-item">G = G_max · s · T_awan</div>
         <div class="formula-item">P_pv = P_stc · (G/1000) · PR · [1 − γ·(T_sel − 25)]</div>

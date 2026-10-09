@@ -14,9 +14,10 @@
   var dragOffY = 0;
   var cloudAnimations = []; // untuk animasi tutup/buka
 
-  // Posisi referensi
-  var sunPos = { x: 140, y: 70 };
-  var panelCenter = { x: 230, y: 260 };
+  // Posisi referensi — diambil dari Config.LAYOUT agar segmen matahari→panel
+  // yang dipakai perhitungan bayangan awan selalu cocok dengan gambar.
+  var sunPos = { x: C.LAYOUT.sun.x, y: C.LAYOUT.sun.y };
+  var panelCenter = { x: C.LAYOUT.panel.cx, y: C.LAYOUT.panel.cy };
 
   /**
    * Smoothstep function

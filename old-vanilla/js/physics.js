@@ -103,7 +103,10 @@
     state.flows.w1 = state.pPV;
     state.flows.w2 = pNet > 0 ? pNet : 0;
     state.flows.w2r = pNet < 0 ? -pNet : 0;
-    state.flows.w3 = state.lampOn && !state.relay.ch3 && !state.relay.ch4 ? state.lampPower : 0;
+    // W3 aktif hanya bila lampu benar-benar disuplai bus lewat CH1
+    // (saat CH3/CH4 aktif, sumber lampu adalah fuel cell / PLN).
+    state.flows.w3 = state.lampOn && state.relay.ch1 &&
+                     !state.relay.ch3 && !state.relay.ch4 ? state.lampPower : 0;
     state.flows.w4 = pElectrolyzer;
     state.flows.w8 = C.P_ESP;
     state.flows.w7 = pPLN;

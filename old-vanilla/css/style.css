@@ -183,44 +183,114 @@ body {
 }
 
 .panel-section h3 {
-  font-size: 0.78rem;
-  font-weight: 600;
+  font-size: 0.72rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   color: var(--text-secondary);
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
-.panel-section h3 .icon {
-  font-size: 1rem;
+/* Garis aksen menggantikan ikon emoji */
+.panel-section h3::before {
+  content: "";
+  width: 3px;
+  height: 12px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--accent-blue), var(--accent-cyan));
 }
 
 /* ===================== CONTROLS ===================== */
 .control-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-  gap: 8px;
+  gap: 10px;
+  margin-bottom: 9px;
+  min-height: 30px;
 }
 
-.control-row label {
+.control-row:last-child {
+  margin-bottom: 0;
+}
+
+.control-row > label:first-child {
+  flex: 0 0 96px;
   font-size: 0.78rem;
+  line-height: 1.25;
   color: var(--text-secondary);
-  white-space: nowrap;
-  min-width: 90px;
 }
 
+.control-row input[type="range"] {
+  flex: 1 1 auto;
+  min-width: 56px;
+}
+
+.control-row select {
+  flex: 1 1 auto;
+}
+
+/* Nilai yang hanya dibaca (waktu simulasi, periode) */
 .control-row .value {
+  margin-left: auto;
   font-size: 0.75rem;
   color: var(--accent-cyan);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  min-width: 50px;
   text-align: right;
+}
+
+/* ---- Kotak angka: bisa diketik, tetap tersinkron dengan slider ---- */
+.num-field {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.num {
+  width: 54px;
+  padding: 5px 7px;
+  text-align: right;
+  background: var(--bg-primary);
+  color: var(--accent-cyan);
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.num::-webkit-outer-spin-button,
+.num::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.num:hover {
+  border-color: var(--text-muted);
+}
+
+.num:focus {
+  outline: none;
+  background: #0d1422;
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.28);
+}
+
+.unit {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  min-width: 26px;
 }
 
 /* Slider styling */
@@ -288,49 +358,90 @@ select:focus-visible {
 /* Toggle switch */
 .toggle-switch {
   position: relative;
-  display: inline-block;
-  width: 36px;
-  height: 20px;
+  width: 34px;
+  height: 34px;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 .toggle-switch input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
   opacity: 0;
-  width: 0;
-  height: 0;
+  cursor: pointer;
+  z-index: 1;
 }
 
+/* Badan tombol bundar */
 .toggle-slider {
   position: absolute;
-  cursor: pointer;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background-color: var(--border-light);
-  border-radius: 20px;
-  transition: 0.3s;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 32%, #2c3749, #171f2c);
+  border: 1px solid var(--border-light);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.06),
+              0 2px 5px rgba(0, 0, 0, 0.35);
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
 }
 
+/* Simbol daya: cincin terbuka di bagian atas ... */
 .toggle-slider::before {
   content: "";
-  position: absolute;
-  height: 14px;
   width: 14px;
-  left: 3px;
-  bottom: 3px;
-  background-color: white;
+  height: 14px;
   border-radius: 50%;
-  transition: 0.3s;
+  border: 2px solid var(--text-muted);
+  clip-path: polygon(0 30%, 100% 30%, 100% 100%, 0 100%);
+  transition: border-color 0.2s;
 }
 
-input:checked + .toggle-slider {
-  background: linear-gradient(135deg, var(--accent-green), #16a34a);
+/* ... dengan garis tegak yang menembus celahnya */
+.toggle-slider::after {
+  content: "";
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 10px;
+  border-radius: 1px;
+  background: var(--text-muted);
+  transition: background 0.2s;
 }
 
-input:checked + .toggle-slider::before {
-  transform: translateX(16px);
+/* Keadaan ON */
+.toggle-switch input:checked + .toggle-slider {
+  background: radial-gradient(circle at 50% 32%, #4ade80, #15803d);
+  border-color: #4ade80;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.25),
+              0 0 0 1px rgba(74, 222, 128, 0.3),
+              0 0 14px rgba(34, 197, 94, 0.5);
 }
 
-input:focus-visible + .toggle-slider {
-  box-shadow: 0 0 0 2px var(--accent-blue);
+.toggle-switch input:checked + .toggle-slider::before {
+  border-color: #06251a;
+}
+
+.toggle-switch input:checked + .toggle-slider::after {
+  background: #06251a;
+}
+
+.toggle-switch:hover .toggle-slider {
+  border-color: var(--text-secondary);
+}
+
+.toggle-switch input:active + .toggle-slider {
+  transform: scale(0.94);
+}
+
+.toggle-switch input:focus-visible + .toggle-slider {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.55);
 }
 
 /* Buttons row */

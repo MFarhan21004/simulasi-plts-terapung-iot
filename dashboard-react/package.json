@@ -1,0 +1,30 @@
+{
+  "name": "plts-terapung-dashboard",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "check": "esbuild scripts/sim-check.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/sim-check.mjs --log-level=error && node node_modules/.cache/sim-check.mjs"
+  },
+  "dependencies": {
+    "framer-motion": "^14.0.0",
+    "lucide-react": "^1.52.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "recharts": "^3.10.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "esbuild": "^0.28.2",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.2"
+  },
+  "description": "Dashboard digital twin PLTS Terapung + Baterai + Hidrogen Hijau (LKM-3 MSTR Energi)"
+}

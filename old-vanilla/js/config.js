@@ -7,6 +7,32 @@ window.Config = {
   CANVAS_W: 1200,
   CANVAS_H: 675,
 
+  // === Tata letak kanvas (README §4) ===
+  // Satu sumber koordinat untuk renderer.js dan particles.js agar
+  // ujung kabel selalu menempel pada komponen yang benar.
+  LAYOUT: {
+    HORIZON: 455,
+    sun:       { x: 118,  y: 86 },
+    reservoir: { x: 44,   y: 330, w: 262, h: 146 },
+    waterTop:  354,
+    panel:     { cx: 172, cy: 332, w: 166, h: 56, tilt: -12 },
+    iot:       { x: 346,  y: 252, w: 252, h: 166 },
+    esp:       { x: 440,  y: 292, w: 68,  h: 74 },
+    ina:       { x: 362,  y: 292, w: 62,  h: 34, gap: 40 },
+    relay:     { x: 522,  y: 292, w: 60,  h: 74 },
+    battery:   { x: 368,  y: 492, w: 186, h: 72 },
+    lamp:      { x: 648,  y: 500, r: 22 },
+    elBox:     { x: 690,  y: 118, w: 182, h: 56 },
+    bath:      { x: 700,  y: 392, w: 210, h: 108 },
+    bathTop:   408,
+    tubeH2:    { x: 734,  y: 242, w: 48,  h: 244 },
+    tubeO2:    { x: 832,  y: 242, w: 48,  h: 244 },
+    fc:        { x: 930,  y: 400, w: 104, h: 84 },
+    pln:       { x: 930,  y: 512, w: 104, h: 48 },
+    laptop:    { x: 1050, y: 384, w: 138, h: 104 },
+    phone:     { x: 1058, y: 520, w: 60,  h: 112 }
+  },
+
   // === Panel Surya (LKM-3) ===
   P_STC: 5,             // W — daya panel pada STC
   PR: 0.8,              // performance ratio

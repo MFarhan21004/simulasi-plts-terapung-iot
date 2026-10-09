@@ -224,12 +224,12 @@
 
     state.sun = Math.max(0, sun);
     state.dayPhase = minutes >= 360 && minutes < 1080 ? 'SIANG' : 'MALAM';
+    // Cerminkan posisi matahari ke slider dan kotak angkanya
+    var pct = Math.round(state.sun * 100);
     var sunSlider = document.getElementById('sun-slider');
-    var sunValue = document.getElementById('sun-value');
-    if (sunSlider && sunValue) {
-      sunSlider.value = Math.round(state.sun * 100);
-      sunValue.textContent = Math.round(state.sun * 100) + '%';
-    }
+    var sunNum = document.getElementById('sun-slider-value');
+    if (sunSlider) sunSlider.value = pct;
+    if (sunNum && document.activeElement !== sunNum) sunNum.value = pct;
   }
 
   // Mulai saat DOM ready
