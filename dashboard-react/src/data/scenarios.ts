@@ -12,6 +12,7 @@ export interface Scenario {
 
 export const DEFAULT_CONTROLS: SimulationControls = {
   solarIntensity: 1,
+  panelCount: 10,
   autoDayNight: true,
   weather: 'siang',
   windSpeed: 6,
@@ -23,10 +24,13 @@ export const DEFAULT_CONTROLS: SimulationControls = {
   faradayEfficiency: 1,
   initialSoc: 0.7,
   initialH2: 0,
+  batteryAh: 52,
   lampPower: 1,
+  lampCount: 10,
+  lampHours: 12,
   electrolyzerPower: 1,
-  h2Capacity: 50,
-  o2Capacity: 50,
+  h2Capacity: 250,
+  o2Capacity: 250,
 };
 
 export const SCENARIOS: Scenario[] = [
@@ -72,16 +76,16 @@ export const SCENARIOS: Scenario[] = [
   {
     id: 'malam-defisit',
     label: 'Malam / Defisit',
-    description: 'Matahari 0%, SOC 12%, stok H₂ 40 mL',
+    description: 'Matahari 0%, SOC 12%, stok H₂ 200 mL',
     controls: {
       autoDayNight: false,
       solarIntensity: 0,
       weather: 'siang',
       cloudCount: 0,
       initialSoc: 0.12,
-      initialH2: 40,
+      initialH2: 200,
     },
-    seed: { soc: 0.12, hydrogen: 40 },
+    seed: { soc: 0.12, hydrogen: 200 },
   },
   {
     id: 'kendala-v1',

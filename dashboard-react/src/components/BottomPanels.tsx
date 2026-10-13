@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import type { SimulationControls, SimulationState } from '../types/simulation';
 import { PHYSICS } from '../utils/constants';
+import { energyBudget, BATTERY_ROUNDTRIP } from '../utils/physics';
 import { fmt, watt } from '../utils/format';
 import { Card, Metric, Badge } from './ui';
 
@@ -229,6 +230,79 @@ export function SystemStatus({ s }: { s: SimulationState }) {
           </span>
         </div>
       </div>
+    </Card>
+  );
+}
+
+/** ── Kebutuhan vs pasokan listrik ───────────────────────────────────── */
+export function EnergyBudgetCard({
+  s, controls,
+}: { s: SimulationState; controls: SimulationControls }) {
+  const b = energyBudget(controls);
+  const enough = b.balanceWh >= 0;
+  const supplyNow = s.panelPower;
+  const shortNow = b.loadNowW - supplyNow;
+  const max = Math.max(b.supplyWh, b.requiredWh, 1);
+
+  return (
+    <Card
+      title="Kebutuhan vs Pasokan Listrik"
+      icon={<Zap size={15} />}
+      action={<Badge tone={enough ? 'good' : 'bad'}>{enough ? 'CUKUP' : 'KURANG'}</Badge>}
+    >
+      {/* 1. Output panel saat ini */}
+      <div className="grid grid-cols-3 gap-2">
+        <Metric label="Output daya" value={fmt(s.panelPower)} unit="W" color="#FFD43B" icon={<Sun size={11} />} />
+        <Metric label="Output arus" value={fmt(s.panelCurrent, 2)} unit="A" color="#20D9FF" icon={<Activity size={11} />} />
+        <Metric label="Beban sekarang" value={fmt(b.loadNowW)} unit="W" color="#FDE68A" icon={<Zap size={11} />} />
+      </div>
+      <p className="mt-1.5 text-[11px] text-[#8fa6c4]">
+        Saat ini panel{' '}
+        {shortNow <= 0 ? (
+          <span className="font-semibold text-[#38E27A]">menutup seluruh beban, surplus {fmt(-shortNow)} W</span>
+        ) : (
+          <span className="font-semibold text-[#FFB020]">kurang {fmt(shortNow)} W — sisanya dari baterai/H₂</span>
+        )}
+        .
+      </p>
+
+      {/* 2. Perkiraan harian */}
+      <div className="mt-3 space-y-2 border-t border-[#17283f] pt-3">
+        {([
+          ['Produksi panel / hari', b.supplyWh, '#FFD43B', `${controls.panelCount} panel × ${fmt(b.perPanelWh, 1)} Wh`],
+          ['Kebutuhan / hari', b.requiredWh, '#FDE68A', `${controls.lampCount} lampu × ${fmt(controls.lampPower, 1)} W × ${controls.lampHours} jam + ESP32 24 jam`],
+        ] as const).map(([label, wh, color, note]) => (
+          <div key={label}>
+            <div className="flex items-baseline justify-between">
+              <span className="text-[11px] text-[#8fa6c4]">{label}</span>
+              <span className="num text-[12px] font-bold" style={{ color }}>{fmt(wh, 1)} Wh</span>
+            </div>
+            <div className="mt-1 h-2 overflow-hidden rounded-full bg-[#07111f]">
+              <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${(wh / max) * 100}%`, background: color }} />
+            </div>
+            <div className="num mt-[2px] text-[9.5px] text-[#5d7593]">{note}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-2 border-t border-[#17283f] pt-3">
+        <div>
+          <div className="text-[10.5px] text-[#8fa6c4]">{enough ? 'Surplus harian' : 'Defisit harian'}</div>
+          <div className="num text-[15px] font-extrabold" style={{ color: enough ? '#38E27A' : '#FF5F6D' }}>
+            {enough ? '+' : ''}{fmt(b.balanceWh, 1)} Wh
+          </div>
+        </div>
+        <div>
+          <div className="text-[10.5px] text-[#8fa6c4]">Panel minimum</div>
+          <div className="num text-[15px] font-extrabold text-[#20D9FF]">
+            {Number.isFinite(b.panelsNeeded) ? `${b.panelsNeeded} panel` : '—'}
+          </div>
+        </div>
+      </div>
+      <p className="mt-2 text-[9.5px] leading-snug text-[#5d7593]">
+        Cuaca {controls.weather}. Kebutuhan sudah termasuk rugi baterai {fmt((1 - BATTERY_ROUNDTRIP) * 100, 0)}% untuk
+        energi yang dipakai malam hari.
+      </p>
     </Card>
   );
 }

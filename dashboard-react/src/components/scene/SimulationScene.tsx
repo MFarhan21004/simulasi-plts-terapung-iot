@@ -53,7 +53,9 @@ function PanelTag({ s }: { s: SimulationState }) {
             <div className="whitespace-nowrap text-[11px] font-bold leading-tight text-[#e6edf7]">
               Panel Surya Terapung
             </div>
-            <div className="num text-[9px] leading-tight text-[#7d93b2]">6 V 5 W · miring 10°</div>
+            <div className="num text-[9px] leading-tight text-[#7d93b2]">
+              {s.panelCount} × 6 V 5 W · {s.panelCount * 5} Wp
+            </div>
           </div>
           <span
             className="num ml-auto rounded-md px-1.5 py-[2px] text-[13px] font-extrabold"
@@ -210,7 +212,7 @@ export function SimulationScene({
 
         {/* Lampu di atas kabel depan agar cahayanya menutupi ujung kabel */}
         <div className="absolute z-[21]" style={place(OBJECTS.lamp)}>
-          <LedLamp s={state} />
+          <LedLamp s={state} count={controls.lampCount} perLamp={controls.lampPower} />
         </div>
 
         {/* Angka daya pada kabel */}
@@ -221,9 +223,19 @@ export function SimulationScene({
         {/* ── Anotasi (lapisan teratas) ── */}
         <div className="absolute inset-0 z-30">
           <PanelTag s={state} />
-          {ANNOTATIONS.map((a) => (
-            <Label key={a.title} a={a} />
-          ))}
+          {ANNOTATIONS.map((a) =>
+            a.title.startsWith('Baterai') ? (
+              <Label
+                key={a.title}
+                a={{
+                  ...a,
+                  sub: `${fmt(controls.batteryAh * 1000, 0)} mAh · ${fmt(state.batteryCapacityWh, 1)} Wh`,
+                }}
+              />
+            ) : (
+              <Label key={a.title} a={a} />
+            ),
+          )}
         </div>
       </div>
     </div>

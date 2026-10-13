@@ -20,7 +20,8 @@ export interface Box {
 
 export const OBJECTS = {
   reservoir: { x: 50, y: 352, w: 320, h: 212 },
-  solarPanel: { x: 96, y: 302, w: 236, h: 118 },
+  /** Area susunan modul surya di atas waduk (1–6 modul). */
+  solarPanel: { x: 60, y: 284, w: 312, h: 136 },
   controller: { x: 430, y: 268, w: 282, h: 190 },
   battery: { x: 440, y: 560, w: 262, h: 100 },
   electrolyzer: { x: 800, y: 112, w: 242, h: 108 },

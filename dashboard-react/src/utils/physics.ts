@@ -15,6 +15,11 @@ const VOC_TABLE: Array<{ soc: number; v: number }> = [
   { soc: 1.0, v: 4.2 },
 ];
 
+/** Kapasitas energi baterai (Wh) = 3,7 V × Ah. */
+export function batteryCapacityWh(controls: SimulationControls): number {
+  return PHYSICS.V_BAT_NOM * Math.max(0.1, controls.batteryAh);
+}
+
 export const clamp = (v: number, lo: number, hi: number) =>
   v < lo ? lo : v > hi ? hi : v;
 
@@ -65,15 +70,19 @@ export function cloudTransmittance(
   return clamp(base * (1 - dip), PHYSICS.T_CLOUD_MIN * base, 1);
 }
 
-/** §6.2 — daya panel dengan koreksi suhu sel. */
-export function panelOutput(irradiance: number) {
+/**
+ * §6.2 — daya panel dengan koreksi suhu sel.
+ * Modul dirangkai paralel: tegangan tetap, arus dan daya dikali jumlah modul.
+ */
+export function panelOutput(irradiance: number, count = 1) {
   if (irradiance <= 0) {
     return { power: 0, voltage: 0, current: 0, cellTemp: PHYSICS.T_AMB };
   }
   const cellTemp = PHYSICS.T_AMB + ((PHYSICS.NOCT - 20) / 800) * irradiance;
   const power = Math.max(
     0,
-    PHYSICS.P_STC *
+    count *
+      PHYSICS.P_STC *
       (irradiance / 1000) *
       PHYSICS.PR *
       (1 - PHYSICS.GAMMA * (cellTemp - 25)),
@@ -238,7 +247,11 @@ export function stepSimulation(
   const irradiance = PHYSICS.G_MAX * sun * tCloud;
 
   // 2. Panel
-  const panel = panelOutput(irradiance);
+  const panelCount = Math.max(1, Math.round(controls.panelCount));
+  const panel = panelOutput(irradiance, panelCount);
+
+  // Beban lampu = jumlah lampu × daya per lampu
+  const lampTotal = Math.max(0, Math.round(controls.lampCount)) * controls.lampPower;
 
   // 3. Keputusan EMS
   const emsInput: EmsInput = {
@@ -250,7 +263,7 @@ export function stepSimulation(
     hydrogen: prev.hydrogenVolume,
     hydrogenCapacity: controls.h2Capacity,
     lampOn: controls.lampOn,
-    lampPower: controls.lampPower,
+    lampPower: lampTotal,
     electrolyzerPower: controls.electrolyzerPower,
   };
   const ems =
@@ -258,7 +271,7 @@ export function stepSimulation(
   const relay = ems.relay;
 
   // 4. Neraca daya bus
-  const lampLoad = controls.lampOn ? controls.lampPower : 0;
+  const lampLoad = controls.lampOn ? lampTotal : 0;
   const electrolyzerPower = relay.ch2 ? controls.electrolyzerPower : 0;
   const totalLoad = PHYSICS.P_ESP + lampLoad + electrolyzerPower;
 
@@ -273,8 +286,9 @@ export function stepSimulation(
       ? PHYSICS.ETA_CHG * netPower * (dt / 3600)
       : (netPower / PHYSICS.ETA_DIS) * (dt / 3600);
 
-  const batteryEnergy = clamp(prev.batteryEnergy + deltaWh, 0, PHYSICS.E_BAT_MAX);
-  const batterySoc = batteryEnergy / PHYSICS.E_BAT_MAX;
+  const capWh = batteryCapacityWh(controls);
+  const batteryEnergy = clamp(prev.batteryEnergy + deltaWh, 0, capWh);
+  const batterySoc = batteryEnergy / capWh;
   const voc = vocFromSoc(batterySoc);
   const batteryCurrent = Math.abs(netPower) > 0.001 ? netPower / voc : 0;
   const batteryVoltage = clamp(voc + batteryCurrent * PHYSICS.R_INT, 2.5, 4.3);
@@ -294,7 +308,7 @@ export function stepSimulation(
   // 7. Fuel cell
   let fuelCellPower = 0;
   if (relay.ch3) {
-    const demand = controls.lampPower;
+    const demand = lampTotal;
     const chemicalIn = demand / PHYSICS.ETA_FC;
     const molNeeded = (chemicalIn * (dt / 3600)) / PHYSICS.E_MOL_H2;
     let mlNeeded = molNeeded * PHYSICS.V_M * 1000;
@@ -315,7 +329,7 @@ export function stepSimulation(
     solarToController: panel.power,
     controllerToBattery: netPower > 0 ? netPower : 0,
     batteryToController: netPower < 0 ? -netPower : 0,
-    controllerToLoad: controls.lampOn && relay.ch1 ? controls.lampPower : 0,
+    controllerToLoad: controls.lampOn && relay.ch1 ? lampTotal : 0,
     controllerToElectrolyzer: electrolyzerPower,
     electrolyzerToTanks: electrolyzerPower,
     tankToFuelCell: fuelCellPower,
@@ -335,6 +349,9 @@ export function stepSimulation(
     cloudTransmittance: tCloud,
     irradiance,
     panelVoltage: panel.voltage,
+    panelCount,
+    hydrogenCapacity: controls.h2Capacity,
+    batteryCapacityWh: capWh,
     panelCurrent: panel.current,
     panelPower: panel.power,
     cellTemp: panel.cellTemp,
@@ -374,10 +391,13 @@ export function createInitialState(controls: SimulationControls): SimulationStat
     cloudTransmittance: 1,
     irradiance: 0,
     panelVoltage: 0,
+    panelCount: controls.panelCount,
+    hydrogenCapacity: controls.h2Capacity,
     panelCurrent: 0,
     panelPower: 0,
     cellTemp: PHYSICS.T_AMB,
-    batteryEnergy: soc * PHYSICS.E_BAT_MAX,
+    batteryEnergy: soc * batteryCapacityWh(controls),
+    batteryCapacityWh: batteryCapacityWh(controls),
     batterySoc: soc,
     batteryVoltage: voc,
     batteryCurrent: 0,
@@ -404,5 +424,73 @@ export function createInitialState(controls: SimulationControls): SimulationStat
     },
     energy: { solar: 0, load: 0, hydrogenChemical: 0, fuelCell: 0 },
     scenario: 'standar',
+  };
+}
+
+/* ──────────────────────────────────────── Anggaran energi harian (Wh/hari) */
+
+/** Faktor langit dasar per cuaca — sama dengan cloudTransmittance(). */
+const WEATHER_FACTOR = { siang: 1, mendung: 0.45, hujan: 0.25 } as const;
+
+/** Rugi bolak-balik baterai: energi malam harus disimpan lalu diambil lagi. */
+export const BATTERY_ROUNDTRIP = PHYSICS.ETA_CHG * PHYSICS.ETA_DIS;
+
+/**
+ * Energi yang dihasilkan SATU panel selama sehari (Wh), dengan
+ * mengintegrasikan kurva matahari 06.00–18.00 tiap 5 menit.
+ */
+export function dailyEnergyPerPanel(weather: SimulationControls['weather']): number {
+  const step = 300; // detik
+  let wh = 0;
+  for (let t = 0; t < 86400; t += step) {
+    const g = PHYSICS.G_MAX * sunFromClock(t) * WEATHER_FACTOR[weather];
+    wh += panelOutput(g, 1).power * (step / 3600);
+  }
+  return wh;
+}
+
+export interface EnergyBudget {
+  /** Produksi panel per hari (Wh). */
+  supplyWh: number;
+  /** Kebutuhan beban per hari (Wh). */
+  demandWh: number;
+  /** Energi yang harus disediakan panel setelah memperhitungkan rugi baterai. */
+  requiredWh: number;
+  /** Selisih produksi terhadap kebutuhan (+ surplus, − defisit). */
+  balanceWh: number;
+  /** Jumlah panel minimum agar kebutuhan harian tercukupi. */
+  panelsNeeded: number;
+  perPanelWh: number;
+  lampTotalW: number;
+  loadNowW: number;
+}
+
+/**
+ * Perkiraan kebutuhan vs pasokan listrik harian.
+ * Lampu menyala malam hari, jadi energinya lewat baterai dan terkena rugi
+ * bolak-balik η_chg·η_dis. ESP32 menyala 24 jam: separuh siang (langsung dari
+ * panel), separuh malam (lewat baterai).
+ */
+export function energyBudget(controls: SimulationControls): EnergyBudget {
+  const perPanelWh = dailyEnergyPerPanel(controls.weather);
+  const supplyWh = perPanelWh * Math.max(1, controls.panelCount);
+
+  const lampTotalW = controls.lampOn ? controls.lampCount * controls.lampPower : 0;
+  const lampWh = lampTotalW * controls.lampHours;
+  const espWh = PHYSICS.P_ESP * 24;
+  const demandWh = lampWh + espWh;
+
+  const requiredWh = (lampWh + espWh / 2) / BATTERY_ROUNDTRIP + espWh / 2;
+  const panelsNeeded = perPanelWh > 0 ? Math.ceil(requiredWh / perPanelWh) : Infinity;
+
+  return {
+    supplyWh,
+    demandWh,
+    requiredWh,
+    balanceWh: supplyWh - requiredWh,
+    panelsNeeded,
+    perPanelWh,
+    lampTotalW,
+    loadNowW: PHYSICS.P_ESP + lampTotalW,
   };
 }

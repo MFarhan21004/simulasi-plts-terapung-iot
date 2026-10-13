@@ -6,6 +6,7 @@ import {
   EnergyStatus,
   StorageLevels,
   SystemStatus,
+  EnergyBudgetCard,
 } from './components/BottomPanels';
 import { useSimulation } from './hooks/useSimulation';
 
@@ -32,8 +33,11 @@ export default function App() {
             <SimulationScene state={sim.state} controls={sim.controls} />
 
             {/* Informasi sekunder — ringkas agar tidak bersaing dengan adegan */}
-            <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-4">
+            <div className="grid gap-3 lg:grid-cols-2">
+              <EnergyBudgetCard s={sim.state} controls={sim.controls} />
               <RealtimeMetrics s={sim.state} />
+            </div>
+            <div className="grid gap-3 lg:grid-cols-3">
               <EnergyStatus s={sim.state} />
               <StorageLevels s={sim.state} controls={sim.controls} />
               <SystemStatus s={sim.state} />

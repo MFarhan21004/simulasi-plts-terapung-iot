@@ -32,6 +32,19 @@ export function ControlSidebar({
         <p className="mt-1 text-[10.5px] leading-snug text-[#5d7593]">
           Mengubah nilai ini mematikan siklus siang/malam otomatis.
         </p>
+        <div className="mt-2 border-t border-[#17283f] pt-1">
+          <SliderRow
+            label="Jumlah panel"
+            value={controls.panelCount}
+            min={1}
+            max={20}
+            unit="unit"
+            onChange={(panelCount) => onChange({ panelCount: Math.round(panelCount) })}
+          />
+          <p className="text-[10.5px] leading-snug text-[#5d7593]">
+            Kapasitas terpasang {controls.panelCount * 5} Wp · dirangkai paralel (5,1 V).
+          </p>
+        </div>
       </Card>
 
       {/* ── Cuaca ── */}
@@ -154,12 +167,31 @@ export function ControlSidebar({
             label="Stok H₂ awal"
             value={controls.initialH2}
             min={0}
-            max={200}
+            max={1000}
+            step={10}
             unit="mL"
             onChange={(initialH2) => onChange({ initialH2 })}
           />
           <SliderRow
-            label="Daya lampu"
+            label="Kapasitas baterai"
+            value={controls.batteryAh}
+            min={5.2}
+            max={200}
+            step={0.1}
+            decimals={1}
+            unit="Ah"
+            onChange={(batteryAh) => onChange({ batteryAh })}
+          />
+          <SliderRow
+            label="Jumlah lampu"
+            value={controls.lampCount}
+            min={1}
+            max={20}
+            unit="buah"
+            onChange={(v) => onChange({ lampCount: Math.round(v) })}
+          />
+          <SliderRow
+            label="Daya per lampu"
             value={controls.lampPower}
             min={0}
             max={5}
@@ -169,10 +201,18 @@ export function ControlSidebar({
             onChange={(lampPower) => onChange({ lampPower })}
           />
           <SliderRow
+            label="Lampu menyala"
+            value={controls.lampHours}
+            min={1}
+            max={24}
+            unit="jam"
+            onChange={(v) => onChange({ lampHours: Math.round(v) })}
+          />
+          <SliderRow
             label="Daya ke H₂"
             value={controls.electrolyzerPower}
             min={0.2}
-            max={2}
+            max={20}
             step={0.1}
             decimals={1}
             unit="W"
@@ -181,18 +221,18 @@ export function ControlSidebar({
           <SliderRow
             label="Kapasitas tangki H₂"
             value={controls.h2Capacity}
-            min={10}
-            max={200}
-            step={5}
+            min={50}
+            max={1000}
+            step={10}
             unit="mL"
             onChange={(h2Capacity) => onChange({ h2Capacity })}
           />
           <SliderRow
             label="Kapasitas tangki O₂"
             value={controls.o2Capacity}
-            min={10}
-            max={200}
-            step={5}
+            min={50}
+            max={1000}
+            step={10}
             unit="mL"
             onChange={(o2Capacity) => onChange({ o2Capacity })}
           />

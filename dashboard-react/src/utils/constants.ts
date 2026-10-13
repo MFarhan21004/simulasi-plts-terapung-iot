@@ -12,6 +12,8 @@ export const PHYSICS = {
   NOCT: 45,          // °C
   T_AMB: 30,         // °C
   V_PV_NOM: 5.1,     // V ilustratif
+  PANEL_MAX: 20,     // jumlah modul maksimum
+  PANEL_DETAIL_MAX: 6, // di atas ini panel digambar sebagai ladang surya ringkas
 
   /** Baterai Li-ion 2×18650 */
   V_BAT_NOM: 3.7,
@@ -23,7 +25,8 @@ export const PHYSICS = {
 
   /** Beban */
   P_ESP: 0.4,        // W — ESP32 + sensor, selalu menyala
-  P_LAMP: 1.0,       // W
+  P_LAMP: 1.0,       // W per lampu
+  LAMP_MAX: 20,      // jumlah lampu maksimum
 
   /** Elektroliser */
   V_EL: 2.0,         // V

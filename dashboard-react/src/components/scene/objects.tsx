@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import type { SimulationState } from '../../types/simulation';
 import { fmt, watt, volt } from '../../utils/format';
 import { WIRE } from './sceneLayout';
+import { PHYSICS } from '../../utils/constants';
 
 /*
  * Benda-benda fisik adegan 2.5D.
@@ -166,103 +167,212 @@ export function Reservoir({ light }: { light: number }) {
   );
 }
 
-/** Modul surya berperspektif di atas ponton, beserta pantulannya di air. */
-export function SolarPanel({ s }: { s: SimulationState }) {
-  const lit = Math.min(1, s.panelPower / 5);
+/** Posisi satu modul di dalam area susunan panel (persen). */
+interface ModuleSlot {
+  left: number;
+  width: number;
+  bottom: number;
+  height: number;
+  /** Baris belakang: lebih kecil, lebih redup, digambar lebih dulu. */
+  back: boolean;
+}
 
-  const cells = (
-    <div className="grid h-full w-full grid-cols-6 grid-rows-3 gap-[2px] p-[3px]">
-      {Array.from({ length: 18 }).map((_, i) => (
-        <span
-          key={i}
-          className="rounded-[1px]"
-          style={{
-            background: `linear-gradient(140deg,
-              hsl(222 70% ${17 + lit * 15}%) 0%,
-              hsl(216 64% ${25 + lit * 19}%) 100%)`,
-            boxShadow: 'inset 0 0 0 0.5px rgba(160,200,255,0.25)',
-          }}
-        />
-      ))}
-    </div>
-  );
+/**
+ * Susun modul di atas waduk.
+ *   1–3 panel → satu baris
+ *   4–6 panel → dua baris; baris belakang lebih kecil dan lebih tinggi
+ *               supaya susunan tetap terbaca sebagai benda 2.5D.
+ */
+function arrangeModules(count: number): ModuleSlot[] {
+  const n = Math.max(1, Math.min(PHYSICS.PANEL_DETAIL_MAX, Math.round(count)));
+  const row = (k: number, bottom: number, height: number, back: boolean, inset: number) => {
+    const span = 100 - inset * 2;
+    const gap = k > 1 ? 3 : 0;
+    const width = (span - gap * (k - 1)) / k;
+    return Array.from({ length: k }, (_, i) => ({
+      left: inset + i * (width + gap),
+      width,
+      bottom,
+      height,
+      back,
+    }));
+  };
 
-  const panel = (
-    <div
-      className="relative h-full w-full rounded-[4px]"
-      style={{
-        // Bingkai aluminium
-        background: 'linear-gradient(135deg, #c9d4e2 0%, #7b8aa0 45%, #4b586c 100%)',
-        padding: 3,
-        boxShadow: lit > 0.06 ? `0 0 ${22 + lit * 30}px rgba(255,212,59,${lit * 0.4})` : 'none',
-      }}
-    >
-      <div className="relative h-full w-full overflow-hidden rounded-[2px] bg-[#0a1630]">
-        {cells}
-        {/* Kilau matahari yang menyapu permukaan */}
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background: `linear-gradient(115deg,
-              rgba(255,255,255,${0.04 + lit * 0.26}) 0%,
-              rgba(255,240,200,${lit * 0.1}) 30%,
-              transparent 55%)`,
-          }}
-        />
-      </div>
-    </div>
-  );
+  if (n <= 3) {
+    // Satu panel tetap tampil besar; makin banyak makin rapat
+    const inset = n === 1 ? 10 : 4;
+    return row(n, 12, n === 1 ? 82 : 70, false, inset);
+  }
+  const backCount = Math.ceil(n / 2);
+  return [
+    ...row(backCount, 38, 46, true, 10),
+    ...row(n - backCount, 4, 56, false, 3),
+  ];
+}
+
+/** Satu modul surya 6 V 5 W: bingkai, sel, kaki penopang, ponton, pantulan. */
+function SolarModule({ slot, lit, delay }: { slot: ModuleSlot; lit: number; delay: number }) {
+  const cellLit = slot.back ? lit * 0.85 : lit;
 
   return (
-    <div className="absolute inset-0" style={{ animation: 'bob 4.4s ease-in-out infinite' }}>
-      {/* Modul miring dalam perspektif — tampak dari depan-atas */}
+    <div
+      className="absolute"
+      style={{
+        left: `${slot.left}%`,
+        width: `${slot.width}%`,
+        bottom: `${slot.bottom}%`,
+        height: `${slot.height}%`,
+        animation: `bob 4.4s ease-in-out infinite`,
+        animationDelay: `${delay}s`,
+        opacity: slot.back ? 0.92 : 1,
+      }}
+    >
+      {/* Modul miring dalam perspektif */}
       <div
-        className="absolute left-[6%] top-[-6%] h-[70%] w-[88%]"
+        className="absolute inset-x-[4%] top-0 h-[66%]"
         style={{
-          transform: 'perspective(760px) rotateX(34deg) rotateZ(-5deg)',
+          transform: 'perspective(520px) rotateX(34deg) rotateZ(-5deg)',
           transformOrigin: '50% 100%',
         }}
       >
-        {/* Ketebalan bingkai */}
+        <div className="absolute inset-0 translate-x-[2px] translate-y-[4px] rounded-[3px] bg-[#2a3445]" />
         <div
-          className="absolute inset-0 rounded-[4px] bg-[#2a3445]"
-          style={{ transform: 'translate(3px, 6px)' }}
-        />
-        {panel}
+          className="relative h-full w-full rounded-[3px] p-[2px]"
+          style={{
+            background: 'linear-gradient(135deg, #c9d4e2 0%, #7b8aa0 45%, #4b586c 100%)',
+            boxShadow:
+              cellLit > 0.06 ? `0 0 ${14 + cellLit * 22}px rgba(255,212,59,${cellLit * 0.38})` : 'none',
+          }}
+        >
+          <div className="relative grid h-full w-full grid-cols-6 grid-rows-3 gap-[1.5px] overflow-hidden rounded-[2px] bg-[#0a1630] p-[2px]">
+            {Array.from({ length: 18 }).map((_, i) => (
+              <span
+                key={i}
+                className="rounded-[1px]"
+                style={{
+                  background: `linear-gradient(140deg,
+                    hsl(222 70% ${17 + cellLit * 15}%) 0%,
+                    hsl(216 64% ${25 + cellLit * 19}%) 100%)`,
+                }}
+              />
+            ))}
+            <div
+              className="pointer-events-none absolute inset-0"
+              style={{
+                background: `linear-gradient(115deg,
+                  rgba(255,255,255,${0.04 + cellLit * 0.26}) 0%,
+                  rgba(255,240,200,${cellLit * 0.1}) 30%, transparent 55%)`,
+              }}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Kaki penopang */}
-      <div className="absolute bottom-[24%] left-[18%] h-[22%] w-[4px] rounded-full bg-gradient-to-r from-[#aab6c6] to-[#5b687c]" />
-      <div className="absolute bottom-[24%] right-[20%] h-[30%] w-[4px] rounded-full bg-gradient-to-r from-[#aab6c6] to-[#5b687c]" />
-      <div className="absolute bottom-[24%] left-[17%] h-[3px] w-[66%] rounded-full bg-[#7b8aa0]" />
+      <div className="absolute bottom-[20%] left-[18%] h-[16%] w-[3px] rounded-full bg-gradient-to-r from-[#aab6c6] to-[#5b687c]" />
+      <div className="absolute bottom-[20%] right-[20%] h-[22%] w-[3px] rounded-full bg-gradient-to-r from-[#aab6c6] to-[#5b687c]" />
 
-      {/* Ponton berketebalan */}
-      <div className="absolute inset-x-[9%] bottom-[14%] flex justify-between">
+      {/* Ponton */}
+      <div className="absolute inset-x-[8%] bottom-[8%] flex justify-between">
         {[0, 1].map((i) => (
-          <span key={i} className="relative block h-[14px] w-[38px]">
-            <span className="absolute inset-0 translate-x-[2px] translate-y-[3px] rounded-[4px] bg-[#8a3d06]" />
-            <span className="absolute inset-0 rounded-[4px] bg-gradient-to-b from-[#ffb468] via-[#f28a2a] to-[#c9600f] shadow-[inset_1px_1px_0_rgba(255,255,255,0.4)]" />
+          <span key={i} className="relative block h-[10px] w-[34%]">
+            <span className="absolute inset-0 translate-x-[1px] translate-y-[2px] rounded-[3px] bg-[#8a3d06]" />
+            <span className="absolute inset-0 rounded-[3px] bg-gradient-to-b from-[#ffb468] via-[#f28a2a] to-[#c9600f]" />
           </span>
         ))}
       </div>
 
-      {/* Pantulan panel di permukaan air */}
+      {/* Pantulan di air — cukup gradien buram, ringan untuk banyak modul */}
       <div
-        className="reflection pointer-events-none absolute left-[8%] top-[92%] h-[52%] w-[84%]"
+        className="reflection pointer-events-none absolute inset-x-[8%] top-full h-[44%] rounded-[3px]"
         style={{
-          opacity: 0.16 + lit * 0.16,
-          filter: 'blur(1.6px)',
-          WebkitMaskImage: 'linear-gradient(180deg, rgba(0,0,0,0.9), transparent 85%)',
-          maskImage: 'linear-gradient(180deg, rgba(0,0,0,0.9), transparent 85%)',
+          opacity: 0.18 + cellLit * 0.2,
+          filter: 'blur(3px)',
+          background: `linear-gradient(180deg, hsl(218 60% ${30 + cellLit * 20}%), transparent)`,
+        }}
+      />
+    </div>
+  );
+}
+
+/**
+ * Ladang surya terapung untuk jumlah panel besar (7–100).
+ *
+ * Seluruh susunan diletakkan dalam satu bidang berperspektif sehingga baris
+ * belakang mengecil dengan sendirinya. Tiap panel cukup satu elemen dengan
+ * pola sel dari CSS — 100 panel tetap ringan dirender 60 kali per detik.
+ */
+function SolarFarm({ count, lit }: { count: number; lit: number }) {
+  const cols = Math.min(14, Math.ceil(Math.sqrt(count * 2.5)));
+  const rows = Math.ceil(count / cols);
+
+  const tile = {
+    background: `
+      linear-gradient(90deg, rgba(160,200,255,0.28) 1px, transparent 1px) 0 0 / 33.4% 100%,
+      linear-gradient(180deg, rgba(160,200,255,0.28) 1px, transparent 1px) 0 0 / 100% 50%,
+      linear-gradient(140deg, hsl(222 70% ${17 + lit * 15}%), hsl(216 64% ${25 + lit * 20}%))`,
+    border: '1px solid #9aa8bb',
+    borderRadius: 2,
+  } as const;
+
+  return (
+    // Goyangan di pembungkus luar: animasi `bob` memakai transform, jadi
+    // tidak boleh berada di elemen yang sama dengan rotasi perspektif.
+    <div className="absolute inset-0" style={{ animation: 'bob 5s ease-in-out infinite' }}>
+    <div
+      className="absolute inset-x-[-6%] bottom-[6%] h-[92%]"
+      style={{
+        transform: 'perspective(360px) rotateX(52deg)',
+        transformOrigin: '50% 100%',
+        filter: lit > 0.06 ? `drop-shadow(0 0 ${8 + lit * 14}px rgba(255,212,59,${lit * 0.45}))` : undefined,
+      }}
+    >
+      <div
+        className="grid h-full w-full"
+        style={{
+          gridTemplateColumns: `repeat(${cols}, 1fr)`,
+          gridTemplateRows: `repeat(${rows}, 1fr)`,
+          gap: rows > 5 ? 3 : 5,
         }}
       >
-        <div style={{ transform: 'perspective(760px) rotateX(-34deg) rotateZ(5deg)', height: '100%' }}>
-          {panel}
-        </div>
+        {Array.from({ length: count }).map((_, i) => (
+          <span key={i} className="relative" style={tile}>
+            {/* Ponton oranye di tepi bawah tiap panel */}
+            <span className="absolute inset-x-[12%] -bottom-[3px] h-[3px] rounded-full bg-[#f28a2a]" />
+          </span>
+        ))}
       </div>
+      {/* Kilau matahari yang menyapu seluruh ladang */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: `linear-gradient(115deg, rgba(255,255,255,${0.04 + lit * 0.22}) 0%, transparent 50%)`,
+        }}
+      />
+    </div>
+    </div>
+  );
+}
 
-      {/* Kotak sambung — titik berangkat kabel ke kontroler */}
-      <span className="absolute bottom-[6%] right-[-2%] block h-[16px] w-[20px]">
+/** Susunan modul surya terapung. Jumlahnya mengikuti kontrol "Jumlah panel". */
+export function SolarPanel({ s }: { s: SimulationState }) {
+  const count = Math.max(1, s.panelCount);
+  // Kecerahan per modul — daya total dibagi jumlah modul
+  const lit = Math.min(1, s.panelPower / (5 * count));
+  const detailed = count <= PHYSICS.PANEL_DETAIL_MAX;
+
+  return (
+    <div className="absolute inset-0">
+      {detailed ? (
+        arrangeModules(count).map((slot, i) => (
+          <SolarModule key={`${count}-${i}`} slot={slot} lit={lit} delay={-i * 0.7} />
+        ))
+      ) : (
+        <SolarFarm count={count} lit={lit} />
+      )}
+
+      {/* Kotak sambung — semua modul paralel bertemu di sini, lalu ke kontroler */}
+      <span className="absolute left-[89%] top-[72%] block h-[16px] w-[20px]">
         <span className="absolute inset-0 translate-x-[2px] translate-y-[3px] rounded-[3px] bg-[#0d141e]" />
         <span className="absolute inset-0 rounded-[3px] border border-[#5d7593]/50 bg-gradient-to-b from-[#3a475a] to-[#222c3b]" />
       </span>
@@ -810,7 +920,8 @@ export function FuelCellBox({ s }: { s: SimulationState }) {
 
 /* ═══════════════════════════════════════════════════════════ ⑥ Lampu LED */
 
-export function LedLamp({ s }: { s: SimulationState }) {
+export function LedLamp({ s, count, perLamp }: { s: SimulationState; count: number; perLamp: number }) {
+  const n = Math.max(1, Math.min(20, Math.round(count)));
   const source = s.relay.ch3 ? 'fuel cell' : s.relay.ch4 ? 'PLN' : s.relay.ch1 ? 'panel / baterai' : null;
   const power = s.relay.ch3
     ? s.flows.fuelCellToLoad
@@ -818,69 +929,92 @@ export function LedLamp({ s }: { s: SimulationState }) {
       ? s.flows.gridToLoad
       : s.flows.controllerToLoad;
   const lit = power > 0.01;
+  // Kecerahan relatif: fuel cell yang kehabisan H₂ bisa menyuplai < kebutuhan
+  const level = lit ? Math.min(1, power / Math.max(0.01, n * perLamp)) : 0;
+
+  // Satu lampu tampil besar; makin banyak makin rapat dalam kisi
+  const cols = n === 1 ? 1 : n <= 4 ? 2 : n <= 6 ? 3 : n <= 10 ? 5 : 5;
+  const areaWidth = n === 1 ? '66%' : n <= 4 ? '78%' : '100%';
 
   return (
     <div className="absolute inset-0 flex flex-col items-center">
       {/* Kolam cahaya di tanah */}
       <div
-        className="pointer-events-none absolute left-1/2 top-[64%] h-[46%] w-[260%] -translate-x-1/2 rounded-[50%] transition-opacity duration-500"
+        className="pointer-events-none absolute left-1/2 top-[64%] h-[46%] w-[280%] -translate-x-1/2 rounded-[50%] transition-opacity duration-500"
         style={{
-          opacity: lit ? 1 : 0,
+          opacity: level,
           background:
             'radial-gradient(ellipse, rgba(255,226,120,0.38) 0%, rgba(255,212,59,0.1) 45%, transparent 70%)',
         }}
       />
-      {/* Halo */}
+      {/* Halo bersama */}
       <div
-        className="pointer-events-none absolute left-1/2 top-[-34%] h-[150%] w-[230%] -translate-x-1/2 rounded-full transition-opacity duration-500"
+        className="pointer-events-none absolute left-1/2 top-[-34%] h-[150%] w-[240%] -translate-x-1/2 rounded-full transition-opacity duration-500"
         style={{
-          opacity: lit ? 1 : 0,
+          opacity: level * Math.min(1, 0.7 + n * 0.06),
           background:
             'radial-gradient(circle, rgba(255,246,186,0.5) 0%, rgba(255,212,59,0.14) 34%, transparent 66%)',
         }}
       />
 
-      {/* Bohlam */}
-      <motion.div
-        className="relative grid h-[60px] w-[60px] place-items-center rounded-full"
+      {/* Kisi bohlam */}
+      <div
+        className="relative grid"
         style={{
-          background: lit
-            ? 'radial-gradient(circle at 40% 32%, #FFFFF4 0%, #FFE98A 40%, #FFB020 100%)'
-            : 'radial-gradient(circle at 40% 32%, #4a5872 0%, #232e40 100%)',
-          boxShadow: lit
-            ? '0 0 40px rgba(255,212,59,0.8), 0 0 80px rgba(255,212,59,0.35), inset -6px -8px 14px rgba(190,110,0,0.4)'
-            : 'inset -6px -8px 14px rgba(0,0,0,0.5), 6px 10px 16px rgba(0,0,0,0.45)',
-          border: `1px solid ${lit ? 'rgba(255,240,180,0.7)' : 'rgba(148,176,214,0.3)'}`,
+          width: areaWidth,
+          gridTemplateColumns: `repeat(${cols}, 1fr)`,
+          gap: n === 1 ? 0 : 3,
         }}
-        animate={lit ? { scale: [1, 1.035, 1] } : { scale: 1 }}
-        transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
       >
-        {/* Kilau kaca */}
-        <span className="absolute left-[22%] top-[16%] h-[22%] w-[16%] rotate-[-30deg] rounded-full bg-white/60 blur-[1px]" />
-        <svg viewBox="0 0 40 40" className="h-[26px] w-[26px]">
-          <path
-            d="M12 27 L16 14 L20 25 L24 14 L28 27"
-            fill="none"
-            stroke={lit ? 'rgba(170,100,0,0.9)' : 'rgba(148,176,214,0.45)'}
-            strokeWidth={2.4}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </motion.div>
-
-      {/* Fitting berulir */}
-      <div className="relative h-[14px] w-[28px]">
-        <span className="absolute inset-0 translate-x-[2px] translate-y-[2px] rounded-b-[4px] bg-[#1d2533]" />
-        <span
-          className="absolute inset-0 rounded-b-[4px]"
-          style={{
-            background:
-              'repeating-linear-gradient(180deg, #b4c0d0 0 2px, #6b7890 2px 4px)',
-          }}
-        />
+        {Array.from({ length: n }).map((_, i) => (
+          <motion.div
+            key={i}
+            className="relative grid aspect-square place-items-center rounded-full"
+            style={{
+              background: lit
+                ? 'radial-gradient(circle at 40% 32%, #FFFFF4 0%, #FFE98A 40%, #FFB020 100%)'
+                : 'radial-gradient(circle at 40% 32%, #4a5872 0%, #232e40 100%)',
+              boxShadow: lit
+                ? `0 0 ${n === 1 ? 40 : 14}px rgba(255,212,59,${0.5 + level * 0.3}), inset -3px -4px 8px rgba(190,110,0,0.4)`
+                : 'inset -3px -4px 8px rgba(0,0,0,0.5), 3px 5px 8px rgba(0,0,0,0.45)',
+              border: `1px solid ${lit ? 'rgba(255,240,180,0.7)' : 'rgba(148,176,214,0.3)'}`,
+              opacity: lit ? 0.55 + level * 0.45 : 1,
+            }}
+            animate={lit ? { scale: [1, 1.035, 1] } : { scale: 1 }}
+            transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', delay: i * 0.12 }}
+          >
+            <span className="absolute left-[22%] top-[16%] h-[22%] w-[16%] rotate-[-30deg] rounded-full bg-white/60 blur-[1px]" />
+            {n === 1 && (
+              <svg viewBox="0 0 40 40" className="h-[44%] w-[44%]">
+                <path
+                  d="M12 27 L16 14 L20 25 L24 14 L28 27"
+                  fill="none"
+                  stroke={lit ? 'rgba(170,100,0,0.9)' : 'rgba(148,176,214,0.45)'}
+                  strokeWidth={2.4}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            )}
+          </motion.div>
+        ))}
       </div>
-      <div className="h-[5px] w-[16px] rounded-b-[2px] bg-[#2f3a4d]" />
+
+      {/* Fitting (satu lampu) atau rel lampu (banyak lampu) */}
+      {n === 1 ? (
+        <>
+          <div className="relative h-[14px] w-[28px]">
+            <span className="absolute inset-0 translate-x-[2px] translate-y-[2px] rounded-b-[4px] bg-[#1d2533]" />
+            <span
+              className="absolute inset-0 rounded-b-[4px]"
+              style={{ background: 'repeating-linear-gradient(180deg, #b4c0d0 0 2px, #6b7890 2px 4px)' }}
+            />
+          </div>
+          <div className="h-[5px] w-[16px] rounded-b-[2px] bg-[#2f3a4d]" />
+        </>
+      ) : (
+        <div className="mt-[3px] h-[6px] rounded-[2px] bg-gradient-to-b from-[#9aa7b8] to-[#4b586c] shadow" style={{ width: areaWidth }} />
+      )}
 
       {/* Nilai */}
       <div className="mt-1 text-center">
@@ -891,6 +1025,7 @@ export function LedLamp({ s }: { s: SimulationState }) {
           {lit ? watt(power) : 'OFF'}
         </div>
         <div className="mt-[3px] text-[8.5px] leading-tight text-[#8fa6c4]">
+          {n > 1 ? `${n} × ${fmt(perLamp, 1)} W · ` : ''}
           {source ?? 'tidak ada suplai'}
         </div>
       </div>
@@ -987,9 +1122,9 @@ function Screen({ s, small }: { s: SimulationState; small?: boolean }) {
         <div className="mt-[3px] flex gap-[2px]">
           {(
             [
-              [s.panelPower / 5, WIRE.solar],
+              [s.panelPower / (5 * Math.max(1, s.panelCount)), WIRE.solar],
               [s.batterySoc, WIRE.battery],
-              [s.hydrogenVolume / 50, WIRE.hydrogen],
+              [s.hydrogenVolume / Math.max(1, s.hydrogenCapacity), WIRE.hydrogen],
             ] as const
           ).map(([ratio, color], i) => (
             <span key={i} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/12">

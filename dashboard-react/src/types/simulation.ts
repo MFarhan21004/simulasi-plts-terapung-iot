@@ -53,6 +53,8 @@ export interface FlowState {
 export interface SimulationControls {
   /** Intensitas cahaya 0–1. */
   solarIntensity: number;
+  /** Jumlah modul surya 6 V 5 W yang dirangkai paralel. */
+  panelCount: number;
   autoDayNight: boolean;
   weather: WeatherPreset;
   windSpeed: number;
@@ -66,7 +68,14 @@ export interface SimulationControls {
   /** SOC awal 0–1, dipakai saat reset. */
   initialSoc: number;
   initialH2: number;
+  /** Kapasitas baterai (Ah) pada 3,7 V. Prototipe asli 5,2 Ah. */
+  batteryAh: number;
+  /** Daya per lampu (W). */
   lampPower: number;
+  /** Jumlah lampu LED terpasang. */
+  lampCount: number;
+  /** Lama lampu menyala per hari (jam) — untuk perkiraan kebutuhan harian. */
+  lampHours: number;
   electrolyzerPower: number;
   h2Capacity: number;
   o2Capacity: number;
@@ -84,6 +93,12 @@ export interface SimulationState {
   /** Iradiansi efektif W/m². */
   irradiance: number;
 
+  /** Jumlah modul surya aktif (disalin dari kontrol). */
+  panelCount: number;
+  /** Kapasitas tangki H₂ saat ini (mL), disalin dari kontrol. */
+  hydrogenCapacity: number;
+  /** Kapasitas baterai (Wh) saat ini. */
+  batteryCapacityWh: number;
   panelVoltage: number;
   panelCurrent: number;
   panelPower: number;

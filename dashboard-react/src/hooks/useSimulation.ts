@@ -4,9 +4,13 @@ import type {
   SimulationControls,
   SimulationState,
 } from '../types/simulation';
-import { createInitialState, stepSimulation, type EmsMemory } from '../utils/physics';
+import {
+  createInitialState,
+  stepSimulation,
+  batteryCapacityWh,
+  type EmsMemory,
+} from '../utils/physics';
 import { DEFAULT_CONTROLS, SCENARIOS } from '../data/scenarios';
-import { PHYSICS } from '../utils/constants';
 
 /** Langkah integrasi maksimum agar hasil tetap stabil pada skala waktu tinggi. */
 const MAX_STEP = 1;
@@ -70,12 +74,15 @@ export function useSimulation() {
           out = {
             ...out,
             batterySoc: patch.initialSoc,
-            batteryEnergy: patch.initialSoc * PHYSICS.E_BAT_MAX,
+            batteryEnergy: patch.initialSoc * batteryCapacityWh(next),
           };
         }
         if (patch.initialH2 !== undefined && patch.initialH2 !== prev.initialH2) {
           const h2 = Math.min(patch.initialH2, next.h2Capacity);
           out = { ...out, hydrogenVolume: h2, oxygenVolume: Math.min(h2 / 2, next.o2Capacity) };
+        }
+        if (patch.batteryAh !== undefined && patch.batteryAh !== prev.batteryAh) {
+          out = { ...out, batteryEnergy: out.batterySoc * batteryCapacityWh(next) };
         }
         if (patch.h2Capacity !== undefined) {
           out = { ...out, hydrogenVolume: Math.min(out.hydrogenVolume, patch.h2Capacity) };
@@ -105,14 +112,20 @@ export function useSimulation() {
     if (!scenario) return;
 
     memRef.current.deficitTimer = 0;
-    const nextControls = { ...DEFAULT_CONTROLS, ...scenario.controls };
+    // Jumlah panel adalah konfigurasi perangkat keras, bukan bagian skenario,
+    // jadi dibawa terus saat skenario berganti.
+    const nextControls = {
+      ...DEFAULT_CONTROLS,
+      panelCount: controlsRef.current.panelCount,
+      ...scenario.controls,
+    };
     const fresh = createInitialState(nextControls);
 
     const seeded: SimulationState = {
       ...fresh,
       scenario: id,
       batterySoc: scenario.seed?.soc ?? fresh.batterySoc,
-      batteryEnergy: (scenario.seed?.soc ?? fresh.batterySoc) * PHYSICS.E_BAT_MAX,
+      batteryEnergy: (scenario.seed?.soc ?? fresh.batterySoc) * batteryCapacityWh(nextControls),
       hydrogenVolume: scenario.seed?.hydrogen ?? fresh.hydrogenVolume,
       oxygenVolume: (scenario.seed?.hydrogen ?? fresh.hydrogenVolume) / 2,
     };
