@@ -63,7 +63,7 @@ export const SCENARIOS: Scenario[] = [
   {
     id: 'mendung',
     label: 'Mendung',
-    description: 'Awan menutup penuh, daya tinggal ~15%',
+    description: 'Awan menutup penuh, daya tinggal ~7%',
     controls: {
       autoDayNight: false,
       solarIntensity: 1,

@@ -865,6 +865,9 @@ export function GasTank({
 
 /* ══════════════════════════════════════════════════════════ ⑫ Fuel cell */
 
+/** Konsumsi H₂ per watt keluaran: 1/(η·E_mol) mol/Wh × V_m, dalam mL/menit. */
+const H2_ML_PER_MIN_PER_W = (1 / (PHYSICS.ETA_FC * PHYSICS.E_MOL_H2)) * PHYSICS.V_M * 1000 / 60;
+
 export function FuelCellBox({ s }: { s: SimulationState }) {
   const on = s.relay.ch3;
   return (
@@ -910,7 +913,7 @@ export function FuelCellBox({ s }: { s: SimulationState }) {
             {watt(s.fuelCellPower)}
           </span>
           <span className="num text-[8.5px] text-[#8fa6c4]">
-            H₂ {fmt(on ? s.fuelCellPower * 0.73 : 0, 2)} mL/mnt
+            H₂ {fmt(on ? s.fuelCellPower * H2_ML_PER_MIN_PER_W : 0, 1)} mL/mnt
           </span>
         </div>
       </Slab>
@@ -920,14 +923,20 @@ export function FuelCellBox({ s }: { s: SimulationState }) {
 
 /* ═══════════════════════════════════════════════════════════ ⑥ Lampu LED */
 
-export function LedLamp({ s, count, perLamp }: { s: SimulationState; count: number; perLamp: number }) {
+export function LedLamp({
+  s, count, perLamp, on,
+}: { s: SimulationState; count: number; perLamp: number; on: boolean }) {
   const n = Math.max(1, Math.min(20, Math.round(count)));
   const source = s.relay.ch3 ? 'fuel cell' : s.relay.ch4 ? 'PLN' : s.relay.ch1 ? 'panel / baterai' : null;
-  const power = s.relay.ch3
-    ? s.flows.fuelCellToLoad
-    : s.relay.ch4
-      ? s.flows.gridToLoad
-      : s.flows.controllerToLoad;
+  // PLN menanggung seluruh beban (termasuk ESP32), jadi daya lampu diambil
+  // dari saklarnya, bukan dari total aliran PLN
+  const power = !on
+    ? 0
+    : s.relay.ch3
+      ? s.flows.fuelCellToLoad
+      : s.relay.ch4
+        ? (s.flows.gridToLoad > 0 ? n * perLamp : 0)
+        : s.flows.controllerToLoad;
   const lit = power > 0.01;
   // Kecerahan relatif: fuel cell yang kehabisan H₂ bisa menyuplai < kebutuhan
   const level = lit ? Math.min(1, power / Math.max(0.01, n * perLamp)) : 0;

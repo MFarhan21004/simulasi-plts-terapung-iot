@@ -270,46 +270,13 @@ export function stepSimulation(
     controls.emsVersion === 'v1' ? emsV1(emsInput) : emsV2(emsInput, dt, mem);
   const relay = ems.relay;
 
-  // 4. Neraca daya bus
+  // 4. Fuel cell — hanya memasok lampu yang benar-benar menyala, dan
+  //    dayanya dibatasi stok H₂ yang tersisa
   const lampLoad = controls.lampOn ? lampTotal : 0;
-  const electrolyzerPower = relay.ch2 ? controls.electrolyzerPower : 0;
-  const totalLoad = PHYSICS.P_ESP + lampLoad + electrolyzerPower;
-
-  // Fuel cell dan PLN memasok beban langsung, tidak lewat baterai
-  const fuelCellSupply = relay.ch3 ? lampLoad : 0;
-  const gridPower = relay.ch4 ? Math.max(0, totalLoad - panel.power) : 0;
-  const netPower = panel.power + fuelCellSupply + gridPower - totalLoad;
-
-  // 5. Baterai
-  const deltaWh =
-    netPower >= 0
-      ? PHYSICS.ETA_CHG * netPower * (dt / 3600)
-      : (netPower / PHYSICS.ETA_DIS) * (dt / 3600);
-
-  const capWh = batteryCapacityWh(controls);
-  const batteryEnergy = clamp(prev.batteryEnergy + deltaWh, 0, capWh);
-  const batterySoc = batteryEnergy / capWh;
-  const voc = vocFromSoc(batterySoc);
-  const batteryCurrent = Math.abs(netPower) > 0.001 ? netPower / voc : 0;
-  const batteryVoltage = clamp(voc + batteryCurrent * PHYSICS.R_INT, 2.5, 4.3);
-
-  // 6. Elektroliser — Hukum Faraday
   let hydrogenVolume = prev.hydrogenVolume;
-  let oxygenVolume = prev.oxygenVolume;
-  if (relay.ch2 && hydrogenVolume < controls.h2Capacity) {
-    const current = electrolyzerPower / PHYSICS.V_EL;
-    const molH2 =
-      (controls.faradayEfficiency * current * dt) / (2 * PHYSICS.F_CONST);
-    const mlH2 = molH2 * PHYSICS.V_M * 1000;
-    hydrogenVolume = Math.min(controls.h2Capacity, hydrogenVolume + mlH2);
-    oxygenVolume = Math.min(controls.o2Capacity, oxygenVolume + mlH2 / 2);
-  }
-
-  // 7. Fuel cell
   let fuelCellPower = 0;
-  if (relay.ch3) {
-    const demand = lampTotal;
-    const chemicalIn = demand / PHYSICS.ETA_FC;
+  if (relay.ch3 && lampLoad > 0) {
+    const chemicalIn = lampLoad / PHYSICS.ETA_FC;
     const molNeeded = (chemicalIn * (dt / 3600)) / PHYSICS.E_MOL_H2;
     let mlNeeded = molNeeded * PHYSICS.V_M * 1000;
 
@@ -319,9 +286,48 @@ export function stepSimulation(
       fuelCellPower =
         dt > 0 ? (molAvailable * PHYSICS.E_MOL_H2 * PHYSICS.ETA_FC * 3600) / dt : 0;
     } else {
-      fuelCellPower = demand;
+      fuelCellPower = lampLoad;
     }
     hydrogenVolume = Math.max(0, hydrogenVolume - mlNeeded);
+  }
+
+  // 5. Neraca daya bus
+  const electrolyzerPower = relay.ch2 ? controls.electrolyzerPower : 0;
+  const totalLoad = PHYSICS.P_ESP + lampLoad + electrolyzerPower;
+
+  // Fuel cell dan PLN memasok beban langsung, tidak lewat baterai
+  const gridPower = relay.ch4 ? Math.max(0, totalLoad - panel.power) : 0;
+  const capWh = batteryCapacityWh(controls);
+  let netPower = panel.power + fuelCellPower + gridPower - totalLoad;
+
+  // Baterai penuh tidak bisa menerima lebih — kelebihan dipotong pengontrol
+  if (netPower > 0) {
+    const roomWh = Math.max(0, capWh - prev.batteryEnergy);
+    const maxCharge = dt > 0 ? roomWh / PHYSICS.ETA_CHG / (dt / 3600) : 0;
+    netPower = Math.min(netPower, maxCharge);
+  }
+
+  // 6. Baterai
+  const deltaWh =
+    netPower >= 0
+      ? PHYSICS.ETA_CHG * netPower * (dt / 3600)
+      : (netPower / PHYSICS.ETA_DIS) * (dt / 3600);
+
+  const batteryEnergy = clamp(prev.batteryEnergy + deltaWh, 0, capWh);
+  const batterySoc = batteryEnergy / capWh;
+  const voc = vocFromSoc(batterySoc);
+  const batteryCurrent = Math.abs(netPower) > 0.001 ? netPower / voc : 0;
+  const batteryVoltage = clamp(voc + batteryCurrent * PHYSICS.R_INT, 2.5, 4.3);
+
+  // 7. Elektroliser — Hukum Faraday
+  let oxygenVolume = prev.oxygenVolume;
+  if (relay.ch2 && hydrogenVolume < controls.h2Capacity) {
+    const current = electrolyzerPower / PHYSICS.V_EL;
+    const molH2 =
+      (controls.faradayEfficiency * current * dt) / (2 * PHYSICS.F_CONST);
+    const mlH2 = molH2 * PHYSICS.V_M * 1000;
+    hydrogenVolume = Math.min(controls.h2Capacity, hydrogenVolume + mlH2);
+    oxygenVolume = Math.min(controls.o2Capacity, oxygenVolume + mlH2 / 2);
   }
 
   // 8. Jalur aliran energi untuk animasi

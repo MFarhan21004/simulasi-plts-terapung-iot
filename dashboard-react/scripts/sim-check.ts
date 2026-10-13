@@ -157,6 +157,35 @@ const ok = (cond: boolean, msg: string) => out.push(`${cond ? 'PASS' : 'FAIL'}  
   }
 }
 
+// 10. Fuel cell tidak membakar H2 saat lampu dimatikan
+{
+  const c = { ...DEFAULT_CONTROLS, autoDayNight: false, solarIntensity: 0, lampOn: false };
+  const s = run(c, 30, {
+    mode: 'DEFISIT', relay: { ch1: false, ch2: false, ch3: true, ch4: false }, hydrogenVolume: 40,
+  });
+  ok(s.hydrogenVolume === 40 && s.fuelCellPower === 0,
+     `lampu mati: H2 tidak terpakai (${s.hydrogenVolume.toFixed(2)} mL, FC ${s.fuelCellPower} W)`);
+}
+
+// 11. Stok H2 tersisa sedikit: baterai menanggung kekurangannya (energi kekal)
+{
+  const c = { ...DEFAULT_CONTROLS, autoDayNight: false, solarIntensity: 0, initialSoc: 0.12, lampCount: 10 };
+  const prev = { ...createInitialState(c), mode: 'DEFISIT' as const,
+    relay: { ch1: false, ch2: false, ch3: true, ch4: false }, hydrogenVolume: 0.5 };
+  const s = stepSimulation(prev, c, 1, { deficitTimer: 0 });
+  const expected = -((PHYSICS.P_ESP + c.lampCount * c.lampPower - s.fuelCellPower) / PHYSICS.ETA_DIS) / 3600;
+  ok(Math.abs(s.batteryEnergy - prev.batteryEnergy - expected) < 1e-9,
+     `kekurangan fuel cell ditanggung baterai (FC ${s.fuelCellPower.toFixed(3)} W)`);
+}
+
+// 12. Baterai penuh tidak menampilkan arus pengisian
+{
+  const c = { ...DEFAULT_CONTROLS, autoDayNight: false, solarIntensity: 1, cloudCount: 0, initialSoc: 1 };
+  const s = run(c, 10);
+  ok(s.flows.controllerToBattery === 0 && s.batteryCurrent === 0,
+     `baterai 100%: aliran ke baterai 0 W (${s.flows.controllerToBattery.toFixed(2)} W)`);
+}
+
 console.log(out.join('\n'));
 const failed = out.filter((l) => l.startsWith('FAIL')).length;
 console.log(`\n${out.length - failed}/${out.length} pemeriksaan lolos`);

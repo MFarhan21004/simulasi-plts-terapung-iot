@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 
 /** Kartu panel standar dengan judul opsional. */
@@ -91,6 +91,17 @@ export function SliderRow({
   const clamp = (v: number) => Math.min(max, Math.max(min, v));
   const pct = ((value - min) / (max - min)) * 100;
 
+  // Teks ketikan disimpan terpisah: angka di luar batas (mis. "3" saat
+  // mengetik "300" dengan min 50) tidak langsung dipaksa ke batas
+  const [draft, setDraft] = useState<string | null>(null);
+  const commit = () => {
+    if (draft !== null) {
+      const v = Number(draft);
+      if (draft.trim() !== '' && !Number.isNaN(v)) onChange(clamp(v));
+      setDraft(null);
+    }
+  };
+
   return (
     <div className="flex items-center gap-2.5 py-1">
       <span className="w-[96px] shrink-0 text-[11.5px] leading-tight text-[#8fa6c4]">
@@ -122,10 +133,15 @@ export function SliderRow({
           min={min}
           max={max}
           step={step}
-          value={Number(value.toFixed(decimals))}
+          value={draft ?? Number(value.toFixed(decimals))}
           onChange={(e) => {
+            setDraft(e.target.value);
             const v = Number(e.target.value);
-            if (!Number.isNaN(v)) onChange(clamp(v));
+            if (e.target.value.trim() !== '' && v >= min && v <= max) onChange(v);
+          }}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') e.currentTarget.blur();
           }}
           className="num w-[48px] rounded-lg border border-[#1e3350] bg-[#07111f] px-2 py-1
                      text-right text-[12px] font-semibold text-[#22d3ee] outline-none

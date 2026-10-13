@@ -212,7 +212,7 @@ export function SimulationScene({
 
         {/* Lampu di atas kabel depan agar cahayanya menutupi ujung kabel */}
         <div className="absolute z-[21]" style={place(OBJECTS.lamp)}>
-          <LedLamp s={state} count={controls.lampCount} perLamp={controls.lampPower} />
+          <LedLamp s={state} count={controls.lampCount} perLamp={controls.lampPower} on={controls.lampOn} />
         </div>
 
         {/* Angka daya pada kabel */}

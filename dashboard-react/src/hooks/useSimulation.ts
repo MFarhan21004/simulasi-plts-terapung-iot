@@ -64,42 +64,45 @@ export function useSimulation() {
   }, []);
 
   const updateControls = useCallback((patch: Partial<SimulationControls>) => {
-    setControls((prev) => {
-      const next = { ...prev, ...patch };
+    const prev = controlsRef.current;
+    const next = { ...prev, ...patch };
 
-      // Perubahan yang harus langsung tercermin pada keadaan berjalan
-      setState((s) => {
-        let out = s;
-        if (patch.initialSoc !== undefined && patch.initialSoc !== prev.initialSoc) {
-          out = {
-            ...out,
-            batterySoc: patch.initialSoc,
-            batteryEnergy: patch.initialSoc * batteryCapacityWh(next),
-          };
-        }
-        if (patch.initialH2 !== undefined && patch.initialH2 !== prev.initialH2) {
-          const h2 = Math.min(patch.initialH2, next.h2Capacity);
-          out = { ...out, hydrogenVolume: h2, oxygenVolume: Math.min(h2 / 2, next.o2Capacity) };
-        }
-        if (patch.batteryAh !== undefined && patch.batteryAh !== prev.batteryAh) {
-          out = { ...out, batteryEnergy: out.batterySoc * batteryCapacityWh(next) };
-        }
-        if (patch.h2Capacity !== undefined) {
-          out = { ...out, hydrogenVolume: Math.min(out.hydrogenVolume, patch.h2Capacity) };
-        }
-        if (patch.o2Capacity !== undefined) {
-          out = { ...out, oxygenVolume: Math.min(out.oxygenVolume, patch.o2Capacity) };
-        }
-        stateRef.current = out;
-        return out;
-      });
+    // Perubahan yang harus langsung tercermin pada keadaan berjalan.
+    // Dihitung dari ref, bukan di dalam updater setState, agar tidak
+    // tertimpa langkah animasi berikutnya.
+    let out = stateRef.current;
+    if (patch.initialSoc !== undefined && patch.initialSoc !== prev.initialSoc) {
+      out = {
+        ...out,
+        batterySoc: patch.initialSoc,
+        batteryEnergy: patch.initialSoc * batteryCapacityWh(next),
+      };
+    }
+    if (patch.initialH2 !== undefined && patch.initialH2 !== prev.initialH2) {
+      const h2 = Math.min(patch.initialH2, next.h2Capacity);
+      out = { ...out, hydrogenVolume: h2, oxygenVolume: Math.min(h2 / 2, next.o2Capacity) };
+    }
+    if (patch.batteryAh !== undefined && patch.batteryAh !== prev.batteryAh) {
+      out = { ...out, batteryEnergy: out.batterySoc * batteryCapacityWh(next) };
+    }
+    if (patch.h2Capacity !== undefined) {
+      out = { ...out, hydrogenVolume: Math.min(out.hydrogenVolume, patch.h2Capacity) };
+    }
+    if (patch.o2Capacity !== undefined) {
+      out = { ...out, oxygenVolume: Math.min(out.oxygenVolume, patch.o2Capacity) };
+    }
 
-      return next;
-    });
+    controlsRef.current = next;
+    setControls(next);
+    if (out !== stateRef.current) {
+      stateRef.current = out;
+      setState(out);
+    }
   }, []);
 
   const reset = useCallback(() => {
     memRef.current.deficitTimer = 0;
+    controlsRef.current = DEFAULT_CONTROLS;
     setControls(DEFAULT_CONTROLS);
     const fresh = createInitialState(DEFAULT_CONTROLS);
     stateRef.current = fresh;
@@ -126,10 +129,17 @@ export function useSimulation() {
       scenario: id,
       batterySoc: scenario.seed?.soc ?? fresh.batterySoc,
       batteryEnergy: (scenario.seed?.soc ?? fresh.batterySoc) * batteryCapacityWh(nextControls),
-      hydrogenVolume: scenario.seed?.hydrogen ?? fresh.hydrogenVolume,
-      oxygenVolume: (scenario.seed?.hydrogen ?? fresh.hydrogenVolume) / 2,
+      hydrogenVolume: Math.min(
+        scenario.seed?.hydrogen ?? fresh.hydrogenVolume,
+        nextControls.h2Capacity,
+      ),
+      oxygenVolume: Math.min(
+        (scenario.seed?.hydrogen ?? fresh.hydrogenVolume) / 2,
+        nextControls.o2Capacity,
+      ),
     };
 
+    controlsRef.current = nextControls;
     setControls(nextControls);
     stateRef.current = seeded;
     setState(seeded);
